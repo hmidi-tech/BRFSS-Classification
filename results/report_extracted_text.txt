@@ -1,0 +1,212 @@
+Categorical Encoding and Threshold Selection for BRFSS Classiﬁcation
+Mohamed Amine Hmidi Mohamed Y ebari Omar Marouane Bensaid
+EPFL
+Abstract—We classify self-reported myocardial infarction
+or coronary heart disease in BRFSS-derived survey data
+using NumPy implementations of linear models. We compare
+imputation, missingness indicators, categorical encoding and
+regularization on a stratiﬁed development/tuning split, reserv-
+ing an independent ﬁnal holdout. Reference encoding of small
+integer-valued feature sets improves tuning F1 by 0.0147 at
+a common threshold. Our selected L2 logistic model attains
+holdout F1 0.4225, accuracy 0.8685, and recall 0.5446 at a
+tuning-selected threshold of 0.20. Threshold choice dominates
+the measured accuracy–recall tradeoff. These observational,
+self-reported outcomes support classiﬁcation comparisons, not
+prospective clinical claims.
+I. D ATA AND EVALUATION DESIGN
+The supplied dataset contains 328,135 labeled observa-
+tions and 109,379 test observations, each with 321 features.
+There are 28,975 positive training labels (8.8302%). The
+target _MICHD describes respondents reporting a history
+of myocardial infarction or coronary heart disease, derived
+from the corresponding survey questions [ 1]. It does not es-
+tablish prospective incidence or clinically veriﬁed diagnosis.
+Always predicting the negative class obtains 0.9117 accuracy
+but zero recall and F1.
+Raw feature missingness is 44.7880% in training and
+44.7852% in test. No inﬁnite values, duplicate IDs, train/test
+ID overlap, or exact duplicate rows across all 321 raw
+features were found. Feature names and order match be-
+tween splits, and label IDs align with training inputs. These
+checks do not establish that distinct rows represent indepen-
+dent respondents. Many survey codes have variable-speciﬁc
+meanings; for example, 88 denotes zero unhealthy days
+for PHYSHLTH [1]. We therefore do not apply a universal
+sentinel rule.
+Using seed 433, we stratify labeled rows into 196,881
+development, 65,627 tuning, and 65,627 untouched hold-
+out observations. Every ﬁll value, scale, category set, and
+feature-removal choice is ﬁtted only on development rows
+during selection. Ten conﬁgurations and the selection rule
+were recorded before ﬁtting. The AIcrowd rules specify
+accuracy, while the observed leaderboard lists F1 ﬁrst and
+appears ordered by F1 [ 2], [ 3]. Pending clariﬁcation, we
+provisionally optimize F1 locally and report accuracy sepa-
+rately.
+II. M ETHODS
+Feature processing. We remove the input ID and exclude
+annual sequence number SEQNO, its duplicate _PSU, and
+raw interview date IDATE. We also exclude HAREHAB1:
+its rehabilitation question is conditional on a reported heart
+attack [1]. All 773 observed training values occur in positive
+cases, making availability a target proxy. Other medical-
+history predictors are retained.
+Numeric columns receive a development-ﬁtted mean or
+median ﬁll followed by mean/std scaling; fully observed
+constants and all-missing columns are removed. Optional
+binary indicators represent missingness observed in the ﬁt
+partition. The categorical variant reference-encodes integer-
+valued columns with at most 12 observed levels, using the
+most frequent level as reference. Unseen categories map to
+that reference. This is a cardinality heuristic rather than a
+complete semantic interpretation; higher-cardinality survey
+codes remain numeric.
+Learning. All six mandatory methods are implemented
+with the speciﬁed signatures: MSE GD, single-sample SGD,
+normal-equation least squares and ridge, and ordinary and
+regularized logistic GD. Their returned loss is evaluated
+at the ﬁnal weights and excludes regularization. Ridge
+uses X ⊤X + 2N λI, penalizing every supplied coordinate.
+Independent checks supplement the ofﬁcial numerical tests.
+For prediction we compare linear regression, ridge and
+logistic models. Our optional logistic optimizer minimizes
+1
+N
+∑
+i
+[
+log(1 + ex⊤i w) − yix⊤i w] + λ ∑
+j>0
+w2j , (1)
+with yi ∈ { 0, 1} and an unpenalized intercept w0. This
+intercept treatment is separate from the mandatory methods.
+A NumPy L-BFGS implementation uses ten curvature pairs
+and Armijo backtracking, at most 120 iterations, and a
+gradient inﬁnity-norm target of 10−5. Float32 design storage
+limits memory; weights, objective reductions and curvature
+state use ﬂoat64. Several runs, including the selected model,
+reach the iteration budget rather than the target tolerance.
+The linear baseline handles redundant columns with a Gram
+eigen pseudoinverse; ridge uses a ﬂoat64 normal-equation
+solve.
+Selection. We compare the four processing variants in
+Table II, then λ ∈ {0, 10−4, 10−3, 10−2, 10−1} on the cate-
+gorical design. Thresholds range from 0.05 to 0.65 by 0.01,
+using tuning predictions only. Within 0.002 of the maximum
+tuning F1, the recorded rule prefers fewer features, then
+stronger L2 regularization. It selects λ = 10 −4 and threshold
+0.20, with 1,172 design columns. Selection is frozen before
+holdout evaluation.
+
+Table I
+TUNING RESULTS . E ACH MODEL ’S THRESHOLD IS SELECTED ON
+TUNING DATA ; THE MAJORITY CLASSIFIER IS FIXED . L INEAR MODELS
+USE THE INDICATOR DESIGN .
+Model Threshold Accuracy F1 Recall
+Majority — 0.9117 0.0000 0.0000
+Linear regression 0.22 0.8653 0.4057 0.5208
+Ridge ( 10−3) 0.22 0.8666 0.4049 0.5141
+Logistic, mean ﬁll 0.21 0.8724 0.4133 0.5089
+Categorical, no L2 0.21 0.8763 0.4327 0.5343
+Selected L2 logistic 0.20 0.8722 0.4321 0.5506
+Table II
+CONTROLLED TUNING ABLATIONS AT THRESHOLD 0.20 AND THE SAME
+120- ITERATION BUDGET . L2 IS 10−3 UNTIL THE FINAL ROW . D ELTAS
+ARE ABSOLUTE F1 UNITS .
+Intervention F1 ∆F1
+Mean ﬁll + scaling 0.4129 —
+Median ﬁll 0.4131 +0.0002
++ Missing indicators 0.4139 +0.0008
++ Categorical encoding 0.4285 +0.0147
+L2 10−3 → 10−4 0.4321 +0.0036
+III. M EASURED RESULTS
+Table I compares tuning performance; these estimates
+are optimistic after selection. The unregularized categorical
+model achieves a slightly higher F1 (0.4327), within the
+prespeciﬁed tolerance for choosing regularization. Table II
+instead ﬁxes the threshold at 0.20 to isolate processing
+changes. Categorical encoding provides the largest process-
+ing gain; median imputation and missing indicators have
+much smaller effects. Increasing L2 to 10−2 lowers tuned
+F1 to 0.4099, so stronger regularization is not uniformly
+beneﬁcial. Equal optimizer budgets do not imply equal
+convergence, which limits attribution of small differences
+solely to feature representation.
+On the untouched holdout, the ﬁxed selection obtains
+F1 0.4225, accuracy 0.8685, balanced accuracy 0.7223,
+precision 0.3451, and recall 0.5446. There are 3,156 true
+positives, 5,989 false positives, 2,639 false negatives and
+53,843 true negatives. ROC-AUC is 0.8585 and average
+precision is 0.3861. Training F1 is 0.4392 versus tuning
+0.4321; the holdout gap remains a limitation rather than
+evidence of an unbiased tuning estimate.
+At threshold 0.50, this same holdout model gives F1
+0.2444 and accuracy 0.9142. Using the tuning-selected 0.20
+threshold improves holdout F1 by 0.1781 while reducing
+accuracy by 0.0456; it increases recall from 0.1572 to
+0.5446. Figure 1 shows the corresponding tuning tradeoff.
+An accuracy-selected threshold of 0.58 instead gives tuning
+accuracy 0.9153 and F1 0.1796, underscoring the unresolved
+competition objective.
+Three-fold CV on the non-holdout pool yields F1 0.4310
+0.1 0.2 0.3 0.4 0.5 0.6
+Probability threshold
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0Score
+Tuning F1
+Tuning accuracy
+Figure 1. Tuning scores for the selected logistic model. The dashed
+line marks the tuning-selected threshold; no holdout labels determine this
+choice.
+± 0.0004 (sample standard deviation). Each fold reﬁts
+processing and calibrates its threshold inside the outer
+training partition. Family selection is not nested, so this is
+a consistency diagnostic. A conditional IID-row bootstrap
+interval for holdout F1 is [0.4125, 0.4321]; it ignores survey
+design and selection variability and is not a population-level
+clinical interval.
+IV. L IMITATIONS AND REPRODUCTION
+Survey nonresponse, optional modules, self-report and
+shared sampling structure limit interpretation. False nega-
+tives remain substantial (45.54% of positives), and a recall-
+oriented threshold introduces many false positives. We did
+not establish prospective validity, fairness across popula-
+tions, full semantic cleaning, or coefﬁcient-wise stability.
+Small ablation gains are not established as signiﬁcant or
+consistent across folds; only the selected conﬁguration has
+the three-fold diagnostic. The 120-step ﬁnal ﬁt also stops
+before convergence.
+After freezing choices, we reﬁt processing and weights on
+all labeled rows, producing 1,183 design columns because
+the larger ﬁt discovers more categories. run.py loads
+the saved weights and ﬁtted transformations; seed 433 and
+threshold 0.20 reproduce the CSV . From the repository
+root, run python run.py with -data-dir dataset ,
+-output new.csv , and -seed 433 . Two executions,
+including a fresh source directory and CSV cache, produce
+identical SHA-256 hashes in the same Python 3.12.14 /
+NumPy 2.5.3 environment. Cross-backend bitwise iden-
+tity is unveriﬁed. Training code, indices, conﬁgurations,
+source/data ﬁngerprints and measurements are saved. No
+AIcrowd acceptance or score is claimed.
+Unresolved: public GitHub commit permalink, staff AI-
+use policy and metric clariﬁcation. The requester autho-
+rized AI assistance; independent course-policy veriﬁcation
+remains pending. All students must review the generated
+code and text before submission.
+
+REFERENCES
+[1] CDC, “2015 BRFSS Codebook and Calculated V ariables,”
+2016–2017. https://www.cdc.gov/brfss/annual_data/annual_
+2015.html.
+[2] AIcrowd, “EPFL Machine Learning Project 1: Challenge
+Rules,” accessed Oct. 29, 2026. https://www.aicrowd.com/
+challenges/epﬂ-machine-learning-project-1/challenge_rules .
+[3] AIcrowd, “EPFL Machine Learning Project 1: Leaderboard,”
+accessed Oct. 29, 2026. https://www.aicrowd.com/challenges/
+epﬂ-machine-learning-project-1/leaderboards .

@@ -1,0 +1,6 @@
+change,before,after,fixed_threshold,f1_before,f1_after,f1_delta,accuracy_delta,scope
+mean to median imputation,A0_mean,A1_median,0.2,0.41289280667519007,0.4131209249176581,0.00022811824246804502,-9.142578511889266e-05,"tuning; same rows, optimizer budget, threshold and all unrelated settings"
+add missingness indicators,A1_median,A2_missing,0.2,0.4131209249176581,0.4138718999932791,0.0007509750756209965,0.00015237630853148776,"tuning; same rows, optimizer budget, threshold and all unrelated settings"
+encode integer features with at most 12 observed levels,A2_missing,A3_categories,0.2,0.4138718999932791,0.42852287403983413,0.014650974046555021,0.004784616087890714,"tuning; same rows, optimizer budget, threshold and all unrelated settings"
+reduce L2 lambda from 0.001 to 0.0001,A3_categories,A3_l2_0.0001,0.2,0.42852287403983413,0.43212133522919627,0.0035984611893621343,0.00030475261706308654,"tuning; same rows, optimizer budget, threshold and all unrelated settings"
+remove L2 regularization,A3_l2_0.0001,A3_l2_0,0.2,0.43212133522919627,0.43072553925214685,-0.0013957959770494188,-0.00048760418730098287,"tuning; same rows, optimizer budget, threshold and all unrelated settings"

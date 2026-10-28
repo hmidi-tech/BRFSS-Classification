@@ -1,0 +1,98 @@
+{
+  "timestamp_zurich": "2026-10-29T00:24:59.144773+01:00",
+  "shape_train": [
+    328135,
+    321
+  ],
+  "shape_test": [
+    109379,
+    321
+  ],
+  "positive": 28975,
+  "negative": 299160,
+  "positive_fraction": 0.08830207079403295,
+  "train_missing_cells": 47175779,
+  "test_missing_cells": 15724379,
+  "train_missing_fraction": 0.4478798165806975,
+  "test_missing_fraction": 0.44785200414495213,
+  "all_missing_train": [],
+  "single_observed_value_train": [
+    "CTELENUM",
+    "COLGHOUS",
+    "STATERES",
+    "CTELNUM1",
+    "CELLFON2",
+    "CCLGHOUS"
+  ],
+  "near_constant_observed_train": [
+    "CTELENUM",
+    "PVTRESD1",
+    "COLGHOUS",
+    "STATERES",
+    "CTELNUM1",
+    "CELLFON2",
+    "CCLGHOUS",
+    "_FRT16",
+    "_VEG23"
+  ],
+  "small_integer_set_features": 225,
+  "infinite_cells": 0,
+  "row_duplicates_with_all_321_features": {
+    "train": 0,
+    "test": 0,
+    "cross_split": 0,
+    "conflicting_train_labels": 0
+  },
+  "train_test_column_alignment": true,
+  "train_label_id_alignment": true,
+  "unique_ids_each_split": true,
+  "train_test_id_overlap": 0,
+  "row_lengths_valid": true,
+  "HAREHAB1_available": 773,
+  "HAREHAB1_available_positive": 773,
+  "sample_submission": {
+    "header": [
+      "Id",
+      "Prediction"
+    ],
+    "rows": 109379,
+    "ids_align": true,
+    "labels": [
+      -1
+    ],
+    "sha256": "62357ed950e0a7eb238745656fdefaecf451bb79e1775918433472974566a9e3"
+  },
+  "majority_baseline_all_labels_descriptive": {
+    "accuracy": 0.911697929205967,
+    "balanced_accuracy": 0.5,
+    "precision": null,
+    "recall": 0.0,
+    "specificity": 1.0,
+    "f1": 0.0,
+    "false_positive_rate": 0.0,
+    "false_negative_rate": 1.0,
+    "tp": 0,
+    "tn": 299160,
+    "fp": 0,
+    "fn": 28975,
+    "threshold": 0.5,
+    "roc_auc": 0.5,
+    "average_precision": 0.08830207079403295,
+    "binary_cross_entropy": 3.0498454783626774,
+    "brier": 0.08830207079403295
+  },
+  "fingerprints": {
+    "x_train.csv": "bfa447edece27d45b54f8f1486f6351a381885968d71c9eb1574fd1dbf0fa14a",
+    "y_train.csv": "bc974ff01bd82827e05780d106674ee680c918fc54225384cbf4f7b279422ec1",
+    "x_test.csv": "28a7f5f94436a33b5dceb5dd15fd72563f31ec898124e382c123d3827203503c"
+  },
+  "elapsed_seconds": 7.633560047994251,
+  "peak_rss_mib": 1329.5234375,
+  "environment": {
+    "python": "3.12.14 (main, Sep  2 2026, 23:27:36) [GCC 15.3.0]",
+    "executable": "/home/amine/miniforge3/envs/ml26/bin/python",
+    "numpy": "2.5.3",
+    "platform": "Linux-6.18.54.1-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "openblas_num_threads": "4"
+  }
+}

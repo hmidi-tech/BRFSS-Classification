@@ -1,0 +1,23 @@
+% Generated from saved measurements by build_report.py
+\newcommand{\HoldFone}{0.4225}
+\newcommand{\HoldAccuracy}{0.8685}
+\newcommand{\HoldRecall}{0.5446}
+\newcommand{\HoldBalanced}{0.7223}
+\newcommand{\HoldPrecision}{0.3451}
+\newcommand{\CVMean}{0.4310}
+\newcommand{\CVStd}{0.0004}
+\newcommand{\ModelRows}{
+Majority & --- & 0.9117 & 0.0000 & 0.0000\\
+Linear regression & 0.22 & 0.8653 & 0.4057 & 0.5208\\
+Ridge ($10^{-3}$) & 0.22 & 0.8666 & 0.4049 & 0.5141\\
+Logistic, mean fill & 0.21 & 0.8724 & 0.4133 & 0.5089\\
+Categorical, no L2 & 0.21 & 0.8763 & 0.4327 & 0.5343\\
+Selected L2 logistic & 0.20 & 0.8722 & 0.4321 & 0.5506\\
+}
+\newcommand{\AblationRows}{
+Mean fill + scaling & 0.4129 & ---\\
+Median fill & 0.4131 & +0.0002\\
++ Missing indicators & 0.4139 & +0.0008\\
++ Categorical encoding & 0.4285 & +0.0147\\
+L2 $10^{-3}\to10^{-4}$ & 0.4321 & +0.0036\\
+}

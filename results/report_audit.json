@@ -1,0 +1,27 @@
+{
+  "pages": 3,
+  "third_page_references_only": true,
+  "overfull_boxes": 0,
+  "font_warnings": 0,
+  "underfull_boxes": 1,
+  "sha256": "ef4fbad840fe42ac4f79ad167638f5f72568828e99f00176d1215beb3898cc3e",
+  "class_identical_to_template": true,
+  "paper_points": [
+    0.0,
+    0.0,
+    612.0,
+    792.0
+  ],
+  "type3_fonts": [],
+  "authors_confirmed": [
+    "Mohamed Amine Hmidi",
+    "Mohamed Yebari",
+    "Omar Marouane Bensaid"
+  ],
+  "affiliation": "EPFL",
+  "placeholders": [
+    "public_github_commit_permalink",
+    "staff_ai_policy",
+    "primary_competition_metric"
+  ]
+}

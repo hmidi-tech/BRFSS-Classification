@@ -1,0 +1,77 @@
+{
+  "imports": {
+    "implementations.py": [
+      "numpy"
+    ],
+    "helpers.py": [
+      "csv",
+      "numpy",
+      "os"
+    ],
+    "data_io.py": [
+      "csv",
+      "hashlib",
+      "json",
+      "numpy",
+      "pathlib"
+    ],
+    "preprocessing.py": [
+      "numpy"
+    ],
+    "models.py": [
+      "numpy",
+      "time"
+    ],
+    "evaluation.py": [
+      "numpy"
+    ],
+    "run.py": [
+      "argparse",
+      "csv",
+      "data_io",
+      "helpers",
+      "json",
+      "models",
+      "numpy",
+      "pathlib",
+      "preprocessing",
+      "sys"
+    ],
+    "train_final.py": [
+      "argparse",
+      "data_io",
+      "datetime",
+      "experiments",
+      "json",
+      "numpy",
+      "os",
+      "pathlib",
+      "platform",
+      "preprocessing",
+      "resource",
+      "sys",
+      "zoneinfo"
+    ],
+    "experiments.py": [
+      "argparse",
+      "csv",
+      "data_io",
+      "datetime",
+      "evaluation",
+      "json",
+      "models",
+      "numpy",
+      "os",
+      "pathlib",
+      "preprocessing",
+      "resource",
+      "sys",
+      "time",
+      "traceback",
+      "zoneinfo"
+    ]
+  },
+  "forbidden": [],
+  "runtime_numpy": "2.5.3",
+  "scope": "AST imports and direct lstsq calls in prediction/training sources; plotting/testing/PDF tools excluded from runtime"
+}

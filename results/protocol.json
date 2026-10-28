@@ -1,0 +1,32 @@
+{
+  "run_id": "20261029T002740956448",
+  "seed": 433,
+  "split": "60/20/20 stratified development/tuning/untouched holdout",
+  "sizes": {
+    "development": 196881,
+    "tuning": 65627,
+    "holdout": 65627
+  },
+  "selection_objective": "f1",
+  "metric_status": "provisional F1 from observed leaderboard; written rules specify accuracy; unresolved",
+  "selection_rule": "Highest tuning F1 at its tuning-only fixed-grid threshold; within 0.002 F1 of maximum prefer fewer features, then stronger regularization, then higher tuning F1.",
+  "threshold_grid": "0.05 to 0.65 inclusive, step 0.01; ties prefer higher threshold",
+  "budget": "10 configurations, maximum 120 optimizer iterations each; optional 3-fold fixed-configuration diagnostic with internal threshold calibration",
+  "holdout_policy": "Open only after selected configuration is written. Never change selection based on holdout.",
+  "fingerprints": {
+    "x_train.csv": "bfa447edece27d45b54f8f1486f6351a381885968d71c9eb1574fd1dbf0fa14a",
+    "y_train.csv": "bc974ff01bd82827e05780d106674ee680c918fc54225384cbf4f7b279422ec1"
+  },
+  "sources": {
+    "implementations.py": "bc0a105b669ea4798cdb12a8da31eb0297949749b60607466da2fe5d7c26829b",
+    "data_io.py": "f811f083ae57f3c9ebabcc403e68eb6b591c066c15b7449156862279cb7a992d",
+    "preprocessing.py": "8e4ffdb01b06c66e87fc0782836db7475a23e6ce99dc898471abc59cddcd14c4",
+    "models.py": "97c899f94ece53f7f632d5f0c6aca1203b3cf544033f273246a37794c36c813f",
+    "evaluation.py": "716d7956c72600c5f207d7b13a58184914dce571f7721a730843b3e4db852ee2",
+    "experiments.py": "9290c9866005b041271ee5284e8bf19272c37d074d6ce650cb95980b56902f3d"
+  },
+  "git_commit": null,
+  "python": "3.12.14 (main, Sep  2 2026, 23:27:36) [GCC 15.3.0]",
+  "numpy": "2.5.3",
+  "openblas_num_threads": "4"
+}

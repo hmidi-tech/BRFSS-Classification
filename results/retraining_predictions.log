@@ -1,0 +1,32 @@
+{
+  "rows": 109379,
+  "positive_predictions": 14925,
+  "negative_predictions": 94454,
+  "labels": [
+    -1,
+    1
+  ],
+  "sha256": "e8ef72c62f514931ed2d66f28fcb29201756c66d6d90f4c6fa9a73b4df0b0665",
+  "output": "artifacts/retraining_submission.csv",
+  "model": "artifacts/retrained_model.npz",
+  "model_sha256": "443e021cf4543d8fcea015a23d3683c3425fa9083f1c2d11eec54ce3a7a2b393",
+  "input_test_sha256": "28a7f5f94436a33b5dceb5dd15fd72563f31ec898124e382c123d3827203503c",
+  "seed": 433,
+  "threshold": 0.2,
+  "python": "3.12.14 (main, Sep  2 2026, 23:27:36) [GCC 15.3.0]",
+  "numpy": "2.5.3",
+  "command": [
+    "/home/amine/miniforge3/envs/ml26/bin/python",
+    "run.py",
+    "--data-dir",
+    "dataset",
+    "--output",
+    "artifacts/retraining_submission.csv",
+    "--model",
+    "artifacts/retrained_model.npz",
+    "--seed",
+    "433"
+  ],
+  "git_commit": null,
+  "aicrowd_status": "not_uploaded"
+}

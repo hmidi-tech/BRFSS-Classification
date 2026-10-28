@@ -1,0 +1,9 @@
+{
+  "cv_f1_mean": 0.43100997945008984,
+  "cv_f1_sample_std": 0.00040665047910005427,
+  "holdout_f1_iid_bootstrap_95_percent_interval": [
+    0.4125131342695292,
+    0.43213105199041973
+  ],
+  "threshold_delta_holdout_f1": 0.17809022811568206
+}

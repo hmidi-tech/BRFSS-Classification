@@ -1,0 +1,27 @@
+{
+  "experiment_id": "20261029T002740956448_05_A3_l2_0.0001",
+  "seed": 433,
+  "model": {
+    "name": "A3_l2_0.0001",
+    "preprocessing": {
+      "imputation": "median",
+      "indicators": true,
+      "categorical": true
+    },
+    "family": "logistic",
+    "lambda": 0.0001,
+    "max_iters": 120,
+    "tolerance": 1e-05
+  },
+  "threshold": 0.2,
+  "feature_count": 1172,
+  "selection_rule": "Highest tuning F1 at its tuning-only fixed-grid threshold; within 0.002 F1 of maximum prefer fewer features, then stronger regularization, then higher tuning F1.",
+  "metric_status": "provisional F1 from observed leaderboard; written rules specify accuracy; unresolved",
+  "dataset_fingerprints": {
+    "x_train.csv": "bfa447edece27d45b54f8f1486f6351a381885968d71c9eb1574fd1dbf0fa14a",
+    "y_train.csv": "bc974ff01bd82827e05780d106674ee680c918fc54225384cbf4f7b279422ec1"
+  },
+  "candidate_artifact": "artifacts/candidates/20261029T002740956448_05_A3_l2_0.0001",
+  "frozen_before_holdout_at": "2026-10-29T00:28:48.221955+01:00",
+  "git_commit": null
+}

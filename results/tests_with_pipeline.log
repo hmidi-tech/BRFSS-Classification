@@ -1,0 +1,39 @@
+.................FF..........................                            [100%]
+=================================== FAILURES ===================================
+___________________________ test_github_link_format ____________________________
+
+    def test_github_link_format():
+>       assert GITHUB_LINK.startswith("https://") and "github.com" in GITHUB_LINK, (
+            "Please provide a Github link. "
+            "Note that you can ignore this failing test while developing your project but you should pass "
+            "this test with the URL you submit for grading."
+        )
+E       AssertionError: Please provide a Github link. Note that you can ignore this failing test while developing your project but you should pass this test with the URL you submit for grading.
+E       assert (False)
+E        +  where False = <built-in method startswith of str object at 0x72c075b9faa0>('https://')
+E        +    where <built-in method startswith of str object at 0x72c075b9faa0> = '/home/amine/Projects_WSL/project1ML'.startswith
+
+grading_tests/test_project1_public.py:38: AssertionError
+_________________________ test_file_exists[README.md] __________________________
+
+filename = 'README.md'
+github_repo_path = PosixPath('/home/amine/Projects_WSL/project1ML')
+
+    @pytest.mark.parametrize("filename", ("README.md", "implementations.py"))
+    def test_file_exists(filename: str, github_repo_path: pathlib.Path):
+>       assert (github_repo_path / filename).exists(), f"Missing file {filename}."
+E       AssertionError: Missing file README.md.
+E       assert False
+E        +  where False = exists()
+E        +    where exists = (PosixPath('/home/amine/Projects_WSL/project1ML') / 'README.md').exists
+
+grading_tests/test_project1_public.py:54: AssertionError
+=============================== warnings summary ===============================
+grading_tests/test_project1_public.py::test_function_exists[mean_squared_error_gd]
+  <frozen importlib._bootstrap>:530: DeprecationWarning: the load_module() method is deprecated and slated for removal in Python 3.15; use exec_module() instead
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED grading_tests/test_project1_public.py::test_github_link_format - Asser...
+FAILED grading_tests/test_project1_public.py::test_file_exists[README.md] - A...
+2 failed, 43 passed, 1 warning in 1.03s
