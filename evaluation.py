@@ -3,8 +3,27 @@
 import numpy as np
 
 
+def _binary_labels(y):
+    labels = np.asarray(y)
+    if labels.ndim != 1 or not labels.size:
+        raise ValueError("Labels must be a nonempty one-dimensional vector")
+    if not (np.isin(labels, [-1, 1]).all() or np.isin(labels, [0, 1]).all()):
+        raise ValueError("Labels must use -1/+1 or 0/1 encoding")
+    return labels == 1
+
+
+def _evaluation_inputs(y, scores):
+    positive = _binary_labels(y)
+    scores = np.asarray(scores, dtype=float)
+    if scores.shape != positive.shape or not np.isfinite(scores).all():
+        raise ValueError("Nonempty, aligned finite scores are required")
+    return positive, scores
+
+
 def stratified_split(y, seed=433):
     """Disjoint 60% development, 20% tuning, 20% final holdout indices."""
+    y = np.asarray(y)
+    _binary_labels(y)
     rng = np.random.default_rng(seed)
     partitions = [[], [], []]
     for label in np.unique(y):
@@ -16,6 +35,17 @@ def stratified_split(y, seed=433):
 
 
 def stratified_folds(y, k=3, seed=433):
+    y = np.asarray(y)
+    _binary_labels(y)
+    if (
+        isinstance(k, bool)
+        or not isinstance(k, (int, np.integer))
+        or k < 2
+        or min(np.sum(y == value) for value in np.unique(y)) < k
+    ):
+        raise ValueError(
+            "Each class needs at least k observations, with integer k >= 2"
+        )
     rng = np.random.default_rng(seed)
     folds = [[] for _ in range(k)]
     for label in np.unique(y):
@@ -27,10 +57,9 @@ def stratified_folds(y, k=3, seed=433):
 
 def metrics(y, scores, threshold=0.5, probabilities=True):
     """Evaluate +1 as positive; undefined precision/AUC returns None."""
-    y = np.asarray(y) == 1
-    scores = np.asarray(scores, dtype=float)
-    if scores.shape != y.shape or not y.size or not np.isfinite(scores).all():
-        raise ValueError("Nonempty, aligned finite scores are required")
+    y, scores = _evaluation_inputs(y, scores)
+    if np.ndim(threshold) != 0 or not np.isfinite(threshold):
+        raise ValueError("threshold must be a finite scalar")
     pred = scores >= threshold
     tp = int(np.sum(y & pred))
     tn = int(np.sum(~y & ~pred))
@@ -86,9 +115,11 @@ def choose_threshold(y, scores, objective="f1"):
 
     Equal objective values prefer higher thresholds (fewer positive calls).
     """
+    positive, scores = _evaluation_inputs(y, scores)
+    if objective not in {"f1", "accuracy"}:
+        raise ValueError("objective must be 'f1' or 'accuracy'")
     grid = np.arange(5, 66) / 100
     rows = []
-    positive = np.asarray(y) == 1
     for threshold in grid:
         pred = scores >= threshold
         tp = np.sum(pred & positive)

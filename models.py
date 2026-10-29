@@ -53,37 +53,101 @@ def fit_ridge(x, y, lambda_):
     }
 
 
-def fit_logistic(x, y, lambda_=1e-3, max_iters=120, tolerance=1e-5):
+def _validate_logistic(x, y, lambda_, w=None):
+    x, y = np.asarray(x), np.asarray(y, dtype=np.float64)
+    if (
+        x.ndim != 2
+        or y.ndim != 1
+        or x.shape[0] != y.size
+        or not y.size
+        or not x.shape[1]
+    ):
+        raise ValueError("Expected nonempty x (N,D) and y (N,)")
+    if not np.isin(y, [0, 1]).all():
+        raise ValueError("Optional logistic labels must be 0/1")
+    if np.ndim(lambda_) != 0 or not np.isfinite(lambda_) or lambda_ < 0:
+        raise ValueError("lambda_ must be a finite nonnegative scalar")
+    for i in range(0, len(x), 16384):
+        if not np.isfinite(x[i : i + 16384]).all():
+            raise ValueError("Preprocessed features must be finite")
+    if w is not None and (np.shape(w) != (x.shape[1],) or not np.isfinite(w).all()):
+        raise ValueError("Weights must be finite with shape (D,)")
+    return x, y
+
+
+def _logistic_value_gradient(x, y, w, lambda_, precision):
+    penalty = w.copy()
+    penalty[0] = 0
+    if precision == "legacy_float32":
+        # Preserve the exact arithmetic that produced the frozen baseline.
+        z = x @ w.astype(np.float32)
+        prob = sigmoid(z)
+        value = float(np.mean(np.logaddexp(0, z.astype(np.float64)) - y * z))
+        grad = (x.T @ (prob - y).astype(np.float32)).astype(np.float64) / y.size
+    elif precision == "float64":
+        value = 0.0
+        grad = np.zeros_like(w, dtype=np.float64)
+        for start in range(0, y.size, 16384):
+            block = np.asarray(x[start : start + 16384], dtype=np.float64)
+            labels = y[start : start + len(block)]
+            z = block @ w
+            value += float(np.sum(np.logaddexp(0, z) - labels * z))
+            grad += block.T @ (sigmoid(z) - labels)
+        value /= y.size
+        grad /= y.size
+    else:
+        raise ValueError("precision must be 'float64' or 'legacy_float32'")
+    return value + lambda_ * np.dot(penalty, w), grad + 2 * lambda_ * penalty
+
+
+def logistic_value_gradient(x, y, w, lambda_=1e-3, *, precision="float64"):
+    """Mean binary cross-entropy plus L2, excluding coordinate zero from L2.
+
+    Float64 evaluation uses bounded row blocks and differentiates the actual
+    continuous objective. Legacy mode retains the baseline's quantized matvecs
+    for reproduction, so very small finite differences need not agree with it.
+    """
+    x, y = _validate_logistic(x, y, lambda_, w)
+    return _logistic_value_gradient(
+        x, y, np.asarray(w, dtype=float), lambda_, precision
+    )
+
+
+def fit_logistic(
+    x, y, lambda_=1e-3, max_iters=120, tolerance=1e-5, *, precision="float64"
+):
     """Full-batch L-BFGS with Armijo line search for mean BCE + L2.
 
     Implemented here directly in NumPy; no external optimizer is used. The
-    intercept is unpenalized in this optional model. Float32 matrix storage
-    and matvecs are used; weights, objective reductions and optimizer state
-    use float64. Curvature pairs are limited to ten for bounded memory.
+    intercept is unpenalized in this optional model. Float64 objective/gradient
+    evaluation is the default; legacy_float32 explicitly reproduces historical
+    fits. Stored designs may remain float32. Curvature history is at most ten.
     """
     start = time.perf_counter()
-    y = np.asarray(y, dtype=np.float64)
+    x, y = _validate_logistic(x, y, lambda_)
+    if (
+        isinstance(max_iters, bool)
+        or not isinstance(max_iters, (int, np.integer))
+        or max_iters < 0
+    ):
+        raise ValueError("max_iters must be a nonnegative integer")
+    if np.ndim(tolerance) != 0 or not np.isfinite(tolerance) or tolerance < 0:
+        raise ValueError("tolerance must be a finite nonnegative scalar")
     w = np.zeros(x.shape[1], dtype=np.float64)
     prevalence = np.mean(y)
+    if not 0 < prevalence < 1:
+        raise ValueError("Fitting an unpenalized intercept requires both classes")
     w[0] = np.log(prevalence / (1 - prevalence))
-    penalty = np.ones(x.shape[1])
-    penalty[0] = 0
 
     def value_gradient(v):
-        z = x @ v.astype(np.float32)
-        prob = sigmoid(z)
-        objective = float(
-            np.mean(np.logaddexp(0, z.astype(np.float64)) - y * z)
-        ) + lambda_ * np.dot(penalty * v, v)
-        grad = (x.T @ (prob - y).astype(np.float32)).astype(np.float64) / y.size
-        grad += 2 * lambda_ * penalty * v
-        return objective, grad
+        return _logistic_value_gradient(x, y, v, lambda_, precision)
 
     value, grad = value_gradient(w)
     history = []
     trace = []
     converged = False
     status = "max_iters"
+    updates = 0
     for iteration in range(max_iters):
         norm = float(np.max(np.abs(grad)))
         trace.append(
@@ -126,14 +190,24 @@ def fit_logistic(x, y, lambda_=1e-3, max_iters=120, tolerance=1e-5):
             history.append((s, t, 1 / curvature))
             history = history[-10:]
         w, value, grad = candidate, new_value, new_grad
+        updates += 1
+    final_norm = float(np.max(np.abs(grad)))
+    converged = final_norm <= tolerance
+    if converged:
+        status = "gradient_tolerance"
+    if not trace or trace[-1]["iteration"] != updates:
+        trace.append(
+            {"iteration": updates, "objective": value, "gradient_inf_norm": final_norm}
+        )
     return w, {
         "fit_seconds": time.perf_counter() - start,
-        "iterations": len(trace),
+        "iterations": updates,
         "converged": converged,
         "status": status,
         "objective": value,
-        "gradient_inf_norm": float(np.max(np.abs(grad))),
+        "gradient_inf_norm": final_norm,
         "trace": trace,
         "solver": "numpy_lbfgs_armijo",
         "intercept_penalized": False,
+        "precision": precision,
     }

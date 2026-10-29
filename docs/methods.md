@@ -23,9 +23,13 @@ The prediction pipeline uses additional, explicitly separate methods in
 `models.py`. Logistic optimization uses a directly implemented L-BFGS two-loop
 recursion (history ten) and Armijo backtracking (initial step one, sufficient
 decrease `1e-4`, at most 25 halvings). The intercept is unpenalized in this
-optional model. Matrix storage and optimization matrix-vector products use
-float32; parameter vectors, reductions and curvature state use float64.
-Predictions use stored float64 weights. Iterations are limited to 120, gradient
+optional model. The frozen configuration uses explicit `legacy_float32`
+evaluation: matrix-vector products round weights/residuals to float32, while
+parameters, objective reductions and curvature state use float64. This is
+preserved for historical refitting. New direct optimizer calls default to
+blocked float64 objective/gradient evaluation, which supports meaningful
+small-step finite differences. Predictions use stored float64 weights.
+The frozen fit's iterations are limited to 120, gradient
 infinity-norm target `1e-5`. A budget stop is recorded and must not be called
 convergence. No external optimizer, library ML method or pretrained external
 model is used.
@@ -48,3 +52,13 @@ deficiency, invalid inputs, leakage boundaries, serialization, tied-score AUC/AP
 stratification, and stationarity of the optional logistic optimizer on a toy
 problem. These augment the original public tests; passing both does not prove
 all possible numerical cases correct.
+
+The final review reproduced nine failing regression cases before corrections:
+overflow of `2N*lambda` for an extreme finite Ridge penalty, invalid or broadcast
+metric inputs, invalid optional regularization, and final-step convergence
+reporting. Ridge now scales an overflowing normal system without changing its
+objective. Evaluation rejects malformed labels/scores before computing metrics.
+Optional optimizer status counts accepted updates and evaluates the final
+gradient even when the budget is zero or the last update meets tolerance.
+Legacy-mode toy weights match the starting implementation exactly. Independent
+optional gradients pass checks at three feature scales and three step sizes.

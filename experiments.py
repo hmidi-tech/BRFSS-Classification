@@ -46,7 +46,12 @@ def source_fingerprint():
 def train(x, y, config):
     if config["family"] == "logistic":
         return fit_logistic(
-            x, y, config["lambda"], config["max_iters"], config["tolerance"]
+            x,
+            y,
+            config["lambda"],
+            config["max_iters"],
+            config["tolerance"],
+            precision=config.get("precision", "legacy_float32"),
         )
     return fit_ridge(x, y, config["lambda"])
 
@@ -142,7 +147,10 @@ def run(
     pre = Preprocessor(**variants[2][1]).fit(x, names, development[:4000])
     smoke_x = pre.transform(x, development[:4000])
     smoke_w, smoke_info = fit_logistic(
-        smoke_x, (y[development[:4000]] == 1).astype(float), max_iters=20
+        smoke_x,
+        (y[development[:4000]] == 1).astype(float),
+        max_iters=20,
+        precision="legacy_float32",
     )
     write_json(
         out / "smoke.json",

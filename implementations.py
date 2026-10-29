@@ -28,14 +28,28 @@ def _inputs(y, tx, initial_w=None, logistic=False):
 
 
 def _iterations(max_iters, gamma):
-    if not isinstance(max_iters, (int, np.integer)) or max_iters < 0:
+    if (
+        isinstance(max_iters, (bool, np.bool_))
+        or not isinstance(max_iters, (int, np.integer))
+        or max_iters < 0
+    ):
         raise ValueError("max_iters must be a nonnegative integer.")
-    if not np.isfinite(gamma) or gamma < 0:
+    if (
+        np.ndim(gamma) != 0
+        or not np.isreal(gamma)
+        or not np.isfinite(gamma)
+        or gamma < 0
+    ):
         raise ValueError("gamma must be finite and nonnegative.")
 
 
 def _regularization(lambda_):
-    if not np.isfinite(lambda_) or lambda_ < 0:
+    if (
+        np.ndim(lambda_) != 0
+        or not np.isreal(lambda_)
+        or not np.isfinite(lambda_)
+        or lambda_ < 0
+    ):
         raise ValueError("lambda_ must be finite and nonnegative.")
 
 
@@ -104,8 +118,15 @@ def ridge_regression(y, tx, lambda_):
     """
     y, x = _inputs(y, tx)
     _regularization(lambda_)
-    gram = x.T @ x + (2 * y.size * lambda_) * np.eye(x.shape[1])
-    w = np.linalg.solve(gram, x.T @ y)
+    if lambda_ > np.finfo(float).max / (2 * y.size):
+        # Divide the entire normal system by 2N*lambda without ever forming
+        # that overflowing product. This is the same mathematical objective.
+        reciprocal = (0.5 / y.size) / lambda_
+        gram = (x.T @ x) * reciprocal + np.eye(x.shape[1])
+        w = np.linalg.solve(gram, (x.T @ y) * reciprocal)
+    else:
+        gram = x.T @ x + (2 * y.size * lambda_) * np.eye(x.shape[1])
+        w = np.linalg.solve(gram, x.T @ y)
     return w, _mse(y, x, w)
 
 
