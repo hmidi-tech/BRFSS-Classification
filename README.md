@@ -188,14 +188,14 @@ OPENBLAS_NUM_THREADS=4 python -m pytest --rootdir=. "$COURSE_TESTS" --github_lin
 The local-path mode checks code directly and fails the GitHub permalink-format
 test. To check a published revision instead, supply its actual GitHub commit URL
 to `--github_link`. Local checks cover 50 independent tests and 27 public tests;
-the permalink requirement is separate. See [verification details](docs/final_audit.md).
+the permalink requirement is separate.
 
 To repeat the original search, use **fresh** output, artifact and config
 directories through the CLI; populated directories are rejected before writes.
 `experiments.py --help` documents these paths and optional fixed-configuration
 CV. `review_experiments.py` provides the bounded diagnostic protocol, with raw
 weights and indices confined to its local output directory. Historical runs
-and verification records are described in [results/README.md](results/README.md).
+and retained measurements are described in [results/README.md](results/README.md).
 
 ## Report and scientific limitations
 
@@ -212,15 +212,21 @@ No private candidate files, raw data or original course-example directory are
 needed for these two commands. For independent aggregate recomputation, use
 `summarize_results.py --recompute` with the data, local candidate artifacts and
 a fresh `--output-dir`. Compilation was checked with Tectonic 0.17.0 using
-only its populated local cache; the exact compiler command is in the audit.
+only its populated local cache.
 The tracked PDF can be read without installing a LaTeX toolchain.
 
 Limitations include high missingness, heuristic feature typing, unweighted survey
 evaluation, possible dependence between respondents, non-nested selection,
 budget-limited optimization and unverified external clinical generalization.
 The calibrated-probability F1 threshold theorem is not assumed to apply to this
-classifier. [The source audit](docs/source_audit.md) records verified references
-and their scope.
+classifier. The scientific references are listed below.
+
+## Development assistance and responsibility
+
+AI-assisted tools supported implementation, debugging, experimental
+verification and documentation. The students remain responsible for
+understanding the methods, reviewing the submitted work and ensuring
+the accuracy of the reported results.
 
 ## References
 

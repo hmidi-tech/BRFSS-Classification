@@ -1,5 +1,0 @@
-{
-  "weights_exactly_equal": true,
-  "max_absolute_difference": 0.0,
-  "scope": "same data, code, seed, Python/NumPy and four-thread OpenBLAS environment"
-}
