@@ -6,9 +6,11 @@ The suggested team strengths do not establish an agreed allocation of work.
 - [x] Requester confirmed author order: Mohamed Amine Hmidi, Mohamed Yebari,
   Omar Marouane Bensaid, all affiliated with EPFL. Emails are omitted from the
   compact report author block; the supplied emails remain in the task context.
-- [ ] Obtain the current Fall 2026 staff AI-use rule and acknowledgment requirement.
-  The requester's authorization is recorded but independent staff-policy evidence
-  is missing. Review all AI-assisted code, text and claims before submission.
+- [x] Record the requester's account that staff permit assistance and require no
+  separate AI-use mention in the paper. This is a recorded student account,
+  not independent written confirmation; historical provenance is preserved.
+- [ ] Review all assisted code, text and claims and follow the actual course
+  instructions for any required attribution or declaration.
 - [ ] Explain all six objectives, gradients, final-loss conventions, shapes,
   zero iterations, Ridge's factor `2N`, SGD's one-sample updates, and logistic
   0/1 conversion. Distinguish the optional optimizer's intercept convention.

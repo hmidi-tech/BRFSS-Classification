@@ -1,4 +1,4 @@
-# AI-assistance declaration — draft for course-policy confirmation
+# AI-assistance declaration — internal optional draft
 
 AI assistance supported implementation and debugging, numerical and reproducibility
 checks, experiment orchestration, literature review, documentation and report
@@ -7,6 +7,8 @@ no external score or approval is inferred. Generated material must be reviewed
 and understood by the students, who remain responsible for the submitted work.
 
 This declaration does not assert that all three students have completed that
-review. The requester authorized assistance, but the current CS-433 staff rule
-and required disclosure wording/location still require confirmation. Adapt and
-place this statement only after checking the applicable course instructions.
+review. The requester reports staff permission for assistance and no requirement
+for a separate mention in the scientific report. That account is recorded in
+the policy-review note; no written staff ruling is invented here. Retain this
+draft for the students' records and use it only where the actual course
+instructions require or permit a declaration.

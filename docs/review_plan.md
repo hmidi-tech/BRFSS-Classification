@@ -1,4 +1,8 @@
-# Final local quality review — 29 October 2026
+# Initial local quality-review plan — 29 October 2026
+
+This plan records the review that started at `d078c71` and was completed in
+the six commits through `829f08b`. The later controlled editorial polish is
+recorded in `docs/final_audit.md`; the original plan is retained as provenance.
 
 Starting commit: `d078c71960d87d59a4b1cd33b4e1fd40ec4d6f31`, branch `main`,
 clean working tree. The configured origin is retained. Local commits only;

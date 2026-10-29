@@ -26,7 +26,7 @@ valid repository on `main`; that earlier observation is historical.
 | Specific public GitHub commit permalink | Public grader requires `https://github.com/.../tree/<commit>` |
 | Five submissions per day shared by whole team | PDF p.3 and live AIcrowd challenge description |
 | Explicit approval before publication/upload | User instruction; none performed |
-| AI policy and acknowledgment | Team confirmation received; staff policy still unverified |
+| AI policy and acknowledgment | Requester reports explicit staff permission and no separate paper mention; recorded as a student account in the internal policy-review note |
 
 Unresolved contradictions:
 

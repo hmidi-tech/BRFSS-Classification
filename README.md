@@ -1,16 +1,22 @@
-# BRFSS Classification — EPFL CS-433 Project 1, Fall 2026
+# BRFSS Classification — EPFL CS-433 Machine Learning
 
 Classification of **self-reported historical myocardial infarction or coronary
-heart disease** using linear models implemented in NumPy. This is a formative
-course project, not a clinically validated diagnosis or forecast of future disease.
+heart disease** using linear models implemented in NumPy, for Project 1 in
+Fall 2026. Controlled comparisons examine how preprocessing, categorical
+representation, regularization and decision thresholds affect minority-class
+classification. These results do not establish clinical diagnostic or prospective
+validity.
 
 **Authors, in confirmed order:** Mohamed Amine Hmidi, Mohamed Yebari,
 Omar Marouane Bensaid. **Affiliation:** École Polytechnique Fédérale de Lausanne
-(EPFL). Individual contributions are not inferred from the author order.
+(EPFL).
 
-The review preserves the original model and F1-oriented predictions. New commits
-remain local for student review. No AIcrowd acceptance, platform score or grading
-against a published review commit is claimed.
+The selected L2 logistic model obtains **0.4225 F1, 0.8685 accuracy and 0.5446
+recall on the holdout**. Categorical encoding gives the largest measured
+representation improvement: +0.01465 tuning F1 at a fixed threshold.
+See the [scientific report](report/report.pdf) and
+[experimental protocol](docs/experimental_protocol.md) for the comparisons
+and their limitations.
 
 ## Data and availability
 
@@ -19,7 +25,7 @@ The official course data contain 328,135 labeled rows, 109,379 test rows and
 44.7880%. Labels are −1/+1. Data and original course materials are **not tracked**.
 Obtain them through the [course project](https://github.com/epfml/ML_course/tree/main/projects/project1).
 
-In this workspace the data are in `../dataset/`, relative to this repository:
+A supported layout places the official CSVs beside the repository:
 
 ```text
 project1ML/
@@ -52,9 +58,9 @@ From this repository root, the tested invocation is:
 OPENBLAS_NUM_THREADS=4 python run.py --data-dir ../dataset --output submission.csv --seed 433
 ```
 
-The local `submission.csv` already exists. Choose a **fresh** output path when
-repeating the command; the CSV and its `.json`/`.sha256` sidecars are protected
-against replacement. For example, use a new directory under ignored `artifacts/tmp/`.
+Choose a **fresh** output path on each run; the CSV and its `.json`/`.sha256`
+sidecars are protected against replacement. For example, use a new directory
+under ignored `artifacts/tmp/`. Generated predictions are not tracked in Git.
 
 Expected output: exact header `Id,Prediction`, 109,379 rows in original test order,
 14,925 positive and 94,454 negative predictions, with labels strictly −1/+1.
@@ -83,14 +89,15 @@ cross-BLAS bitwise identity are unverified. See
 
 ## Refit the frozen model
 
-The following command was executed, using a fresh path to preserve original weights:
+Refitting uses all labeled observations and the frozen selection. Choose an
+unused path to preserve the supplied reference weights:
 
 ```bash
-OPENBLAS_NUM_THREADS=4 python train_final.py --data-dir ../dataset --model artifacts/tmp/review_20261029T0242/refitted_model.npz
+OPENBLAS_NUM_THREADS=4 python train_final.py --data-dir ../dataset --model artifacts/tmp/refit/final_model.npz
 ```
 
-That path now exists; use another fresh path for a new refit. The frozen
-configuration intentionally retains its historical float32 optimization matvecs.
+The frozen configuration intentionally retains its historical float32
+optimization matrix-vector products.
 New direct optimizer calls default to blocked float64 evaluation; this numerical
 audit path does not silently replace the frozen model or its configuration.
 
@@ -122,7 +129,8 @@ all required regularized methods penalize every supplied coefficient and return
 the final **unregularized** data loss. See [mathematical details](docs/methods.md).
 
 Seed 433 defines development/tuning/holdout sizes 196,881 / 65,627 / 65,627.
-All fitted processing and threshold selection respect their training boundaries.
+Preprocessing is fitted on the development partition; thresholds are selected
+on the separate tuning partition. CV refits preprocessing inside each fold.
 Exclude IDs, `SEQNO`, `_PSU`, raw `IDATE` and target proxy `HAREHAB1`.
 No universal recoding of values such as 88/99 is applied. Integer columns with
 at most twelve observed training levels receive optional reference coding;
@@ -137,8 +145,8 @@ The development design has 1,172 columns; all-label fitting discovers more
 categories and produces 1,183, with its own complete saved mapping.
 
 Selection prefers fewer columns, then stronger L2, within 0.002 of maximum
-tuning F1. It was frozen before the historical holdout evaluation. This review
-does not reuse that opened holdout for selecting a new model.
+tuning F1. The selected model and threshold were frozen before opening the
+holdout; subsequent diagnostics use development data only.
 
 | Fixed model evaluation | Accuracy | F1 | Recall | Balanced accuracy |
 |---|---:|---:|---:|---:|
@@ -156,8 +164,8 @@ family selection was not nested. Survey observation weights are not applied.
 
 Written AIcrowd rules specify accuracy. Observed leaderboard ordering alone
 does not resolve the Fall 2026 objective. The current CSV remains F1-oriented;
-an accuracy-oriented alternative must be selected from development/tuning data,
-kept separate and approved by the students. Nothing is uploaded by this code.
+an accuracy-oriented alternative would require selection on development/tuning
+data rather than the opened holdout.
 
 ## Tests and experiments
 
@@ -167,23 +175,27 @@ Independent checks:
 OPENBLAS_NUM_THREADS=4 python -m pytest tests -q
 ```
 
-Run the unmodified public tests from the separate course clone, not a copied
-grader in the student repository. The exact local verification command was:
+Run the unmodified public tests from a separate official course clone. Set
+`COURSE_TESTS` to that clone's `projects/project1/grading_tests` directory;
+the path below matches the documented local layout. GitPython is a
+development dependency for this grader.
 
 ```bash
-PYTHONPATH=.:/tmp/cs433-grader-deps OPENBLAS_NUM_THREADS=4 python -m pytest --rootdir=. -o cache_dir=artifacts/tmp/review_20261029T0242/pytest_cache ../../ML_course_official/projects/project1/grading_tests --github_link "$PWD" -q
+COURSE_TESTS=../../ML_course_official/projects/project1/grading_tests
+OPENBLAS_NUM_THREADS=4 python -m pytest --rootdir=. "$COURSE_TESTS" --github_link "$PWD" -q
 ```
 
-The `/tmp` prefix supplied session-local GitPython without altering ml26; omit
-it when development dependencies are installed normally. The public GitHub URL
-test intentionally fails for a local path. It remains pending until students
-publish the reviewed commit and test its actual permalink.
+The local-path mode checks code directly and fails the GitHub permalink-format
+test. To check a published revision instead, supply its actual GitHub commit URL
+to `--github_link`. Local checks cover 50 independent tests and 27 public tests;
+the permalink requirement is separate. See [verification details](docs/final_audit.md).
 
 To repeat the original search, use **fresh** output, artifact and config
 directories through the CLI; populated directories are rejected before writes.
-`review_experiments.py` provides the bounded diagnostic protocol, with raw
-weights and indices confined to its local output directory. Exact executed
-commands and status are in [the final audit](docs/final_audit.md).
+`experiments.py --help` documents these paths and optional fixed-configuration
+CV. `review_experiments.py` provides the bounded diagnostic protocol, with raw
+weights and indices confined to its local output directory. Historical runs
+and verification records are described in [results/README.md](results/README.md).
 
 ## Report and scientific limitations
 
@@ -200,7 +212,8 @@ No private candidate files, raw data or original course-example directory are
 needed for these two commands. For independent aggregate recomputation, use
 `summarize_results.py --recompute` with the data, local candidate artifacts and
 a fresh `--output-dir`. Compilation was checked with Tectonic 0.17.0 using
-only its local cache; the exact compiler command is in the audit.
+only its populated local cache; the exact compiler command is in the audit.
+The tracked PDF can be read without installing a LaTeX toolchain.
 
 Limitations include high missingness, heuristic feature typing, unweighted survey
 evaluation, possible dependence between respondents, non-nested selection,
@@ -209,15 +222,13 @@ The calibrated-probability F1 threshold theorem is not assumed to apply to this
 classifier. [The source audit](docs/source_audit.md) records verified references
 and their scope.
 
-## Academic integrity and student handoff
+## References
 
-AI assisted implementation, debugging, experimentation and editing. The requester
-authorized assistance; independent CS-433 staff-policy confirmation remains
-pending. EPFL guidance calls for course-specific clarification, verification and
-disclosure. Preserve attribution and finalize the declaration with the instructors.
-See [policy review](docs/ai_usage_policy_review.md) and
-[student review checklist](docs/student_review_checklist.md).
-
-All three students must understand and approve the work. Students alone handle
-the GitHub push, public-permalink grading check, any optional AIcrowd submission
-within the shared daily budget, and the EPFL final submission.
+- CDC: [2015 BRFSS codebook](https://www.cdc.gov/brfss/annual_data/2015/pdf/codebook15_llcp.pdf)
+  and [survey overview](https://www.cdc.gov/brfss/annual_data/2015/pdf/overview_2015.pdf).
+- Lipton, Elkan and Narayanaswamy (2014):
+  [Optimal Thresholding of Classifiers to Maximize F1 Measure](https://doi.org/10.1007/978-3-662-44851-9_15).
+- Cawley and Talbot (2010):
+  [On Over-fitting in Model Selection and Subsequent Selection Bias in Performance Evaluation](https://www.jmlr.org/papers/v11/cawley10a.html).
+- [Official course project](https://github.com/epfml/ML_course/tree/main/projects/project1)
+  and [AIcrowd challenge rules](https://www.aicrowd.com/challenges/epfl-machine-learning-project-1/challenge_rules).
