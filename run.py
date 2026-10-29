@@ -3,12 +3,14 @@
 import argparse
 import csv
 import json
+import os
 import sys
+import tempfile
 from pathlib import Path
 
 import numpy as np
 
-from data_io import _read_features, sha256
+from data_io import current_commit, load_features, sha256
 from helpers import create_csv_submission
 from models import predict_scores
 from preprocessing import Preprocessor
@@ -16,9 +18,16 @@ from preprocessing import Preprocessor
 
 def verify_submission(path, expected_ids):
     """Require exact row count, order, integral IDs and -1/+1 predictions."""
+    expected_ids = np.asarray(expected_ids)
+    if (
+        expected_ids.ndim != 1
+        or expected_ids.dtype.kind not in "iu"
+        or np.unique(expected_ids).size != expected_ids.size
+    ):
+        raise ValueError("Expected IDs must be distinct integers in a vector")
     with Path(path).open(newline="") as handle:
         reader = csv.reader(handle)
-        if next(reader) != ["Id", "Prediction"]:
+        if next(reader, None) != ["Id", "Prediction"]:
             raise ValueError("Invalid submission header")
         count = 0
         positives = 0
@@ -45,7 +54,14 @@ def main():
     parser.add_argument("--output", default="submission.csv")
     parser.add_argument("--model", default="artifacts/final_model.npz")
     parser.add_argument("--seed", type=int, default=433)
+    parser.add_argument("--cache-dir", default="artifacts/cache")
     args = parser.parse_args()
+    output = Path(args.output)
+    for path in [output, Path(str(output) + ".json"), Path(str(output) + ".sha256")]:
+        if path.exists():
+            raise FileExistsError(
+                "Preserve existing CSV and sidecars; choose a new --output path"
+            )
     model_path = Path(args.model)
     metadata = json.loads(model_path.with_suffix(".json").read_text())
     if sha256(model_path) != metadata["weights_sha256"]:
@@ -55,47 +71,69 @@ def main():
         raise ValueError(
             "Use the documented selection seed; inference itself is deterministic"
         )
-    x, test_ids, names, fingerprint = _read_features(
-        Path(args.data_dir) / "x_test.csv", "artifacts/cache"
+    x, test_ids, names, fingerprint = load_features(
+        Path(args.data_dir) / "x_test.csv", args.cache_dir
     )
     pre = Preprocessor.from_state(metadata["preprocessor"])
     if names != pre.input_names:
         raise ValueError("Test feature names or order differ from the trained model")
     # Training fingerprints and schema are saved for audit. Test fingerprint is
     # recorded here, allowing the same fitted model to run on an ordered input.
-    design = pre.transform(x)
     w = np.load(model_path, allow_pickle=False)["weights"]
-    if w.shape != (design.shape[1],) or not np.isfinite(w).all():
+    if w.shape != (len(pre.feature_names),) or not np.isfinite(w).all():
         raise ValueError("Invalid stored weights")
-    scores = predict_scores(design, w, selected["model"]["family"])
-    if not np.isfinite(scores).all():
-        raise FloatingPointError("Invalid prediction scores")
-    predictions = np.where(scores >= selected["threshold"], 1, -1)
+    threshold = selected["threshold"]
+    if np.ndim(threshold) != 0 or not np.isfinite(threshold):
+        raise ValueError("Stored threshold must be a finite scalar")
+    predictions = np.empty(len(test_ids), dtype=np.int8)
+    # Float64 score evaluation matches the saved model; bounding rows prevents
+    # an implicit float64 copy of the entire expanded float32 design matrix.
+    for start in range(0, len(test_ids), 8192):
+        stop = min(start + 8192, len(test_ids))
+        design = pre.transform(x, np.arange(start, stop), names=names)
+        scores = predict_scores(design, w, selected["model"]["family"])
+        if not np.isfinite(scores).all():
+            raise FloatingPointError("Invalid prediction scores")
+        predictions[start:stop] = np.where(scores >= threshold, 1, -1)
     if len(test_ids) != len(predictions):
         raise ValueError("ID/prediction length mismatch")
-    output = Path(args.output)
-    if output.exists():
-        raise FileExistsError("Preserve the existing CSV; choose a new --output path")
     output.parent.mkdir(parents=True, exist_ok=True)
-    create_csv_submission(test_ids, predictions, str(output))
-    result = verify_submission(output, test_ids)
+    with tempfile.TemporaryDirectory(
+        prefix=".prediction-", dir=output.parent
+    ) as directory:
+        temporary = Path(directory) / "predictions.csv"
+        create_csv_submission(test_ids, predictions, str(temporary))
+        result = verify_submission(temporary, test_ids)
+        # link publishes the verified file without ever replacing an existing
+        # output, including one created concurrently after the preflight check.
+        os.link(temporary, output)
     result.update(
         output=str(output),
         model=str(model_path),
         model_sha256=sha256(model_path),
+        sources_sha256={
+            name: sha256(Path(__file__).resolve().parent / name)
+            for name in [
+                "run.py",
+                "data_io.py",
+                "models.py",
+                "preprocessing.py",
+                "helpers.py",
+            ]
+        },
         input_test_sha256=fingerprint,
         seed=args.seed,
         threshold=selected["threshold"],
         python=sys.version,
         numpy=np.__version__,
         command=[sys.executable, *sys.argv],
-        git_commit=None,
+        git_commit=current_commit(),
         aicrowd_status="not_uploaded",
     )
-    Path(str(output) + ".sha256").write_text(
-        result["sha256"] + "  " + output.name + "\n"
-    )
-    Path(str(output) + ".json").write_text(json.dumps(result, indent=2) + "\n")
+    with Path(str(output) + ".sha256").open("x") as handle:
+        handle.write(result["sha256"] + "  " + output.name + "\n")
+    with Path(str(output) + ".json").open("x") as handle:
+        handle.write(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result, indent=2))
 
 

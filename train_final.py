@@ -12,8 +12,8 @@ from zoneinfo import ZoneInfo
 
 import numpy as np
 
-from data_io import load_data, sha256
-from experiments import train, write_json
+from data_io import current_commit, load_data, sha256, write_json
+from models import fit_model
 from preprocessing import Preprocessor
 
 
@@ -37,7 +37,7 @@ def main():
         d["x_train"], d["names"], np.arange(len(d["y"]))
     )
     x = pre.transform(d["x_train"])
-    w, info = train(x, (d["y"] == 1).astype(float), selected["model"])
+    w, info = fit_model(x, (d["y"] == 1).astype(float), selected["model"])
     if not np.isfinite(w).all():
         raise FloatingPointError("Final training produced invalid weights")
     model_path.parent.mkdir(parents=True, exist_ok=True)
@@ -47,6 +47,7 @@ def main():
         "preprocessor": pre.state(),
         "selection": selected,
         "training_rows": len(d["y"]),
+        "git_commit": current_commit(),
         "fit": info,
         "weights_sha256": sha256(model_path),
         "config_sha256": sha256(args.config),
@@ -58,7 +59,6 @@ def main():
                 "preprocessing.py",
                 "models.py",
                 "evaluation.py",
-                "experiments.py",
                 "train_final.py",
             ]
         },

@@ -15,8 +15,26 @@ def sigmoid(z):
 
 
 def predict_scores(x, w, family):
+    if family not in {"logistic", "ridge"}:
+        raise ValueError("family must be 'logistic' or 'ridge'")
     z = x @ w
     return sigmoid(z) if family == "logistic" else z
+
+
+def fit_model(x, y, config):
+    """Fit a declared model; historical configurations retain legacy arithmetic."""
+    if config["family"] == "logistic":
+        return fit_logistic(
+            x,
+            y,
+            config["lambda"],
+            config["max_iters"],
+            config["tolerance"],
+            precision=config.get("precision", "legacy_float32"),
+        )
+    if config["family"] == "ridge":
+        return fit_ridge(x, y, config["lambda"])
+    raise ValueError("Unknown model family")
 
 
 def fit_ridge(x, y, lambda_):

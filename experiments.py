@@ -14,16 +14,10 @@ from zoneinfo import ZoneInfo
 
 import numpy as np
 
-from data_io import load_data, sha256
+from data_io import current_commit, load_data, sha256, write_json
 from evaluation import choose_threshold, metrics, stratified_folds, stratified_split
-from models import fit_logistic, fit_ridge, predict_scores
+from models import fit_logistic, fit_model as train, predict_scores
 from preprocessing import Preprocessor
-
-
-def write_json(path, content):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(content, indent=2, allow_nan=False) + "\n")
 
 
 def append_event(path, record):
@@ -43,19 +37,6 @@ def source_fingerprint():
     return {p: sha256(p) for p in paths}
 
 
-def train(x, y, config):
-    if config["family"] == "logistic":
-        return fit_logistic(
-            x,
-            y,
-            config["lambda"],
-            config["max_iters"],
-            config["tolerance"],
-            precision=config.get("precision", "legacy_float32"),
-        )
-    return fit_ridge(x, y, config["lambda"])
-
-
 def run(
     data_dir,
     seed,
@@ -64,6 +45,12 @@ def run(
     artifact_dir="artifacts",
     config_dir="config",
 ):
+    for directory in [output_dir, artifact_dir, config_dir]:
+        path = Path(directory)
+        if path.exists() and (not path.is_dir() or any(path.iterdir())):
+            raise FileExistsError(
+                "Use fresh output, artifact and config directories; preserve historical runs"
+            )
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     artifacts = Path(artifact_dir)
@@ -97,7 +84,7 @@ def run(
         "holdout_policy": "Open only after selected configuration is written. Never change selection based on holdout.",
         "fingerprints": d["fingerprints"],
         "sources": source_fingerprint(),
-        "git_commit": None,
+        "git_commit": current_commit(),
         "python": sys.version,
         "numpy": np.__version__,
         "openblas_num_threads": os.environ.get("OPENBLAS_NUM_THREADS"),
@@ -170,7 +157,7 @@ def run(
             "experiment_id": experiment_id,
             "timestamp_zurich": datetime.now(ZoneInfo("Europe/Zurich")).isoformat(),
             "run_id": run_id,
-            "git_commit": None,
+            "git_commit": protocol["git_commit"],
             "dataset_fingerprints": d["fingerprints"],
             "source_fingerprints": protocol["sources"],
             "seed": seed,
@@ -282,7 +269,7 @@ def run(
         "dataset_fingerprints": d["fingerprints"],
         "candidate_artifact": selected["artifact_stem"],
         "frozen_before_holdout_at": datetime.now(ZoneInfo("Europe/Zurich")).isoformat(),
-        "git_commit": None,
+        "git_commit": protocol["git_commit"],
     }
     write_json(selected_path, selection)
     state = json.loads(Path(selected["artifact_stem"] + ".json").read_text())

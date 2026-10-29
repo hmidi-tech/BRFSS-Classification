@@ -1,5 +1,6 @@
 """Measured EDA and data-integrity audit; never fits prediction preprocessing."""
 
+import argparse
 import csv
 import hashlib
 import json
@@ -19,10 +20,16 @@ from evaluation import metrics
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--data-dir", default="dataset")
+    parser.add_argument("--output-dir", default="results")
+    args = parser.parse_args()
     start = time.perf_counter()
-    out = Path("results")
-    out.mkdir(exist_ok=True)
-    d = load_data("dataset")
+    out = Path(args.output_dir)
+    if out.exists() and any(out.iterdir()):
+        raise FileExistsError("Choose a fresh --output-dir; preserve historical audits")
+    out.mkdir(parents=True, exist_ok=True)
+    d = load_data(args.data_dir)
     x, xt, y, names = d["x_train"], d["x_test"], d["y"], d["names"]
     records = []
     for j, name in enumerate(names):
@@ -121,7 +128,7 @@ def main():
         writer.writerows(correlated)
     proxy = x[:, names.index("HAREHAB1")]
     available = np.isfinite(proxy)
-    with Path("dataset/sample_submission.csv").open(newline="") as handle:
+    with (Path(args.data_dir) / "sample_submission.csv").open(newline="") as handle:
         rows = list(csv.reader(handle))
     sample_array = np.asarray(rows[1:], dtype=np.int64)
     summary = {
@@ -166,7 +173,7 @@ def main():
             "rows": len(rows) - 1,
             "ids_align": bool(np.array_equal(sample_array[:, 0], d["test_ids"])),
             "labels": np.unique(sample_array[:, 1]).tolist(),
-            "sha256": sha256("dataset/sample_submission.csv"),
+            "sha256": sha256(Path(args.data_dir) / "sample_submission.csv"),
         },
         "majority_baseline_all_labels_descriptive": metrics(y, np.zeros(y.size)),
         "fingerprints": d["fingerprints"],

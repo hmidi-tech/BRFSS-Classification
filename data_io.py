@@ -3,6 +3,9 @@
 import csv
 import hashlib
 import json
+import os
+import subprocess
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -16,69 +19,121 @@ def sha256(path):
     return digest.hexdigest()
 
 
+def write_json(path, content):
+    """Write a generated JSON output; callers must protect historical paths."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(content, indent=2, allow_nan=False) + "\n")
+
+
+def current_commit():
+    """Return local source provenance, or None outside a Git checkout."""
+    try:
+        return subprocess.check_output(
+            ["git", "-C", str(Path(__file__).resolve().parent), "rev-parse", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
 def _read_features(path, cache_dir):
     """Read numeric CSV, validating row lengths and integral, unique IDs."""
     path = Path(path)
     fingerprint = sha256(path)
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
-    stem = cache_dir / (path.stem + "_" + fingerprint[:16])
-    array_path = stem.with_suffix(".npy")
-    manifest_path = stem.with_suffix(".json")
+    # A new cache version leaves historical caches untouched. Append extensions
+    # rather than replacing a suffix in a source filename containing dots.
+    stem = cache_dir / (path.stem + "_" + fingerprint[:16] + "_v2")
+    array_path = Path(str(stem) + ".npy")
+    manifest_path = Path(str(stem) + ".json")
     with path.open(newline="") as handle:
         reader = csv.reader(handle)
-        header = next(reader)
-        if header[0] != "Id" or len(set(header)) != len(header):
+        header = next(reader, None)
+        if (
+            not header
+            or len(header) < 2
+            or header[0] != "Id"
+            or len(set(header)) != len(header)
+        ):
             raise ValueError(f"Invalid or duplicated header in {path}")
         if array_path.exists() and manifest_path.exists():
             meta = json.loads(manifest_path.read_text())
             if meta["sha256"] != fingerprint or meta["header"] != header:
                 raise ValueError("Cached data manifest mismatch")
-            raw = np.load(array_path, mmap_mode="r")
-            if list(raw.shape) != meta["shape"]:
+            if sha256(array_path) != meta.get("array_sha256"):
+                raise ValueError(
+                    "Cached array checksum mismatch; use a fresh cache directory"
+                )
+            raw = np.load(array_path, mmap_mode="r", allow_pickle=False)
+            if list(raw.shape) != meta["shape"] or raw.dtype != np.float64:
                 raise ValueError("Cached array shape mismatch")
         else:
+            if array_path.exists() or manifest_path.exists():
+                raise ValueError("Incomplete cache; use a fresh cache directory")
             nrows = sum(1 for _ in reader)
-            raw = np.lib.format.open_memmap(
-                array_path, mode="w+", dtype=np.float64, shape=(nrows, len(header))
-            )
-            handle.seek(0)
-            next(reader)
-            start = 0
-            batch = []
-            for line, row in enumerate(reader, start=2):
-                if len(row) != len(header):
-                    raise ValueError(f"{path}:{line}: inconsistent row length")
-                batch.append([value if value else "nan" for value in row])
-                if len(batch) == 4096:
+            if nrows == 0:
+                raise ValueError(f"No observations in {path}")
+            with tempfile.TemporaryDirectory(
+                prefix=".parse-", dir=cache_dir
+            ) as temporary:
+                temporary_array = Path(temporary) / "data.npy"
+                raw = np.lib.format.open_memmap(
+                    temporary_array,
+                    mode="w+",
+                    dtype=np.float64,
+                    shape=(nrows, len(header)),
+                )
+                handle.seek(0)
+                next(reader)
+                start = 0
+                batch = []
+                for line, row in enumerate(reader, start=2):
+                    if len(row) != len(header):
+                        raise ValueError(f"{path}:{line}: inconsistent row length")
+                    batch.append([value.strip() or "nan" for value in row])
+                    if len(batch) == 4096:
+                        raw[start : start + len(batch)] = np.asarray(batch, dtype=float)
+                        start += len(batch)
+                        batch.clear()
+                if batch:
                     raw[start : start + len(batch)] = np.asarray(batch, dtype=float)
                     start += len(batch)
-                    batch.clear()
-            if batch:
-                raw[start : start + len(batch)] = np.asarray(batch, dtype=float)
-                start += len(batch)
-            if start != nrows:
-                raise ValueError("Row count changed during parsing")
-            raw.flush()
-            manifest_path.write_text(
-                json.dumps(
-                    {"sha256": fingerprint, "header": header, "shape": list(raw.shape)},
-                    indent=2,
+                if start != nrows or sha256(path) != fingerprint:
+                    raise ValueError("Source changed during parsing")
+                raw.flush()
+                shape = list(raw.shape)
+                del raw
+                temporary_manifest = Path(temporary) / "manifest.json"
+                write_json(
+                    temporary_manifest,
+                    {
+                        "version": 2,
+                        "sha256": fingerprint,
+                        "header": header,
+                        "shape": shape,
+                        "array_sha256": sha256(temporary_array),
+                    },
                 )
-                + "\n"
-            )
-            del raw
-            raw = np.load(array_path, mmap_mode="r")
+                os.replace(temporary_array, array_path)
+                os.replace(temporary_manifest, manifest_path)
+            raw = np.load(array_path, mmap_mode="r", allow_pickle=False)
     ids_float = raw[:, 0]
     if (
         not np.isfinite(ids_float).all()
         or not np.equal(ids_float, np.floor(ids_float)).all()
+        or np.any(np.abs(ids_float) >= 2**53)
     ):
-        raise ValueError("IDs must be finite integers")
+        raise ValueError("IDs must be finite integers with magnitude below 2**53")
     ids = ids_float.astype(np.int64)
     if np.unique(ids).size != ids.size:
         raise ValueError("Duplicate IDs")
     return raw[:, 1:], ids, header[1:], fingerprint
+
+
+load_features = _read_features
 
 
 def load_data(data_dir, cache_dir="artifacts/cache", include_test=True):
@@ -87,7 +142,11 @@ def load_data(data_dir, cache_dir="artifacts/cache", include_test=True):
     x, ids, names, train_hash = _read_features(directory / "x_train.csv", cache_dir)
     with (directory / "y_train.csv").open(newline="") as handle:
         rows = list(csv.reader(handle))
-    if rows[0] != ["Id", "_MICHD"] or any(len(row) != 2 for row in rows[1:]):
+    if (
+        len(rows) < 2
+        or rows[0] != ["Id", "_MICHD"]
+        or any(len(row) != 2 for row in rows[1:])
+    ):
         raise ValueError("Invalid label schema")
     labels = np.asarray(rows[1:], dtype=np.int64)
     if not np.array_equal(ids, labels[:, 0]):

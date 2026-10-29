@@ -1,8 +1,10 @@
 """Fold-fitted preprocessing; raw survey codes are never globally recoded."""
 
+import copy
+
 import numpy as np
 
-IDENTIFIER_COLUMNS = {"SEQNO", "_PSU", "IDATE"}
+IDENTIFIER_COLUMNS = {"Id", "SEQNO", "_PSU", "IDATE"}
 # CDC 2015 codebook p.73: this question is asked after a reported heart attack.
 # Its availability can reveal a constituent of the target, unlike general
 # risk factors or other medical history. Exclude it in every comparison.
@@ -27,8 +29,31 @@ class Preprocessor:
         self.specs = []
         self.feature_names = []
         self.input_names = []
+        self._fitted = False
+
+    @staticmethod
+    def _indices(x, indices):
+        indices = np.arange(x.shape[0]) if indices is None else np.asarray(indices)
+        if (
+            indices.ndim != 1
+            or indices.dtype.kind not in "iu"
+            or np.any(indices < 0)
+            or np.any(indices >= x.shape[0])
+        ):
+            raise ValueError(
+                "Row indices must be a one-dimensional integer vector within bounds"
+            )
+        return indices
 
     def fit(self, x, names, indices):
+        self._fitted = False
+        if x.ndim != 2 or len(names) != x.shape[1] or len(set(names)) != len(names):
+            raise ValueError(
+                "Feature schema must have one distinct name per input column"
+            )
+        indices = self._indices(x, indices)
+        if not len(indices):
+            raise ValueError("Cannot fit preprocessing without training rows")
         self.input_names = list(names)
         self.specs = []
         self.feature_names = ["intercept"]
@@ -72,13 +97,19 @@ class Preprocessor:
             if missing:
                 self.feature_names.append(name + "_missing")
             self.specs.append(spec)
+        self._fitted = True
         return self
 
-    def transform(self, x, indices=None):
-        if x.shape[1] != len(self.input_names):
+    def transform(self, x, indices=None, *, names=None):
+        if not self._fitted:
+            raise ValueError("Preprocessing must be fitted before transformation")
+        if (
+            x.ndim != 2
+            or x.shape[1] != len(self.input_names)
+            or (names is not None and list(names) != self.input_names)
+        ):
             raise ValueError("Input feature count mismatch")
-        if indices is None:
-            indices = np.arange(x.shape[0])
+        indices = self._indices(x, indices)
         width = len(self.feature_names)
         required = len(indices) * width * np.dtype(np.float32).itemsize
         if required > 3 * 1024**3:
@@ -110,17 +141,57 @@ class Preprocessor:
         return result
 
     def state(self):
-        return {
-            "config": self.config,
-            "specs": self.specs,
-            "feature_names": self.feature_names,
-            "input_names": self.input_names,
-        }
+        return copy.deepcopy(
+            {
+                "config": self.config,
+                "specs": self.specs,
+                "feature_names": self.feature_names,
+                "input_names": self.input_names,
+            }
+        )
 
     @classmethod
     def from_state(cls, state):
+        state = copy.deepcopy(state)
         obj = cls(**state["config"])
         obj.specs = state["specs"]
         obj.feature_names = state["feature_names"]
         obj.input_names = state["input_names"]
+        expected = ["intercept"]
+        seen = set()
+        if len(set(obj.input_names)) != len(obj.input_names):
+            raise ValueError("Serialized schema contains duplicate names")
+        for spec in obj.specs:
+            j = spec["index"]
+            if (
+                not isinstance(j, int)
+                or j < 0
+                or j >= len(obj.input_names)
+                or j in seen
+                or spec["name"] != obj.input_names[j]
+                or spec["name"] in IDENTIFIER_COLUMNS | TARGET_PROXY_COLUMNS
+            ):
+                raise ValueError("Serialized preprocessing schema mismatch")
+            seen.add(j)
+            if spec["categorical"]:
+                levels = np.asarray(spec["levels"])
+                if (
+                    not np.isfinite(levels).all()
+                    or len(set(spec["levels"])) != len(levels)
+                    or spec["reference"] in spec["levels"]
+                ):
+                    raise ValueError("Serialized categorical schema is invalid")
+                expected.extend(f"{spec['name']}={v:g}" for v in levels)
+            else:
+                if (
+                    not np.isfinite([spec["fill"], spec["mean"], spec["scale"]]).all()
+                    or spec["scale"] <= 0
+                ):
+                    raise ValueError("Serialized numeric schema is invalid")
+                expected.append(spec["name"])
+            if spec["missing_indicator"]:
+                expected.append(spec["name"] + "_missing")
+        if expected != obj.feature_names:
+            raise ValueError("Serialized feature schema and names differ")
+        obj._fitted = True
         return obj
