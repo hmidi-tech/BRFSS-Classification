@@ -1,5 +1,6 @@
 """Derive ablations, uncertainty diagnostics, and report figures from saved runs."""
 
+import argparse
 import csv
 import json
 import os
@@ -8,21 +9,28 @@ from pathlib import Path
 
 import numpy as np
 
-from evaluation import metrics
-from experiments import write_json
+from data_io import write_json
+from evaluation import metrics, stratified_split
 
 
-def main():
-    rows = json.loads(Path("results/leaderboard.json").read_text())
-    by_name = {r["config"]["name"]: r for r in rows}
-    split = np.load("artifacts/split_indices.npz")
-    y = np.loadtxt(
-        "dataset/y_train.csv", delimiter=",", skiprows=1, usecols=1, dtype=int
+def recompute(results_dir, data_dir, artifact_dir, output_dir, config):
+    """Recompute into a fresh directory using local, untracked score arrays."""
+    results_dir, artifact_dir, output_dir = map(
+        Path, [results_dir, artifact_dir, output_dir]
     )
-    tuning_y = y[split["tuning"]]
+    if output_dir.exists():
+        raise FileExistsError("Choose a fresh aggregate output directory")
+    rows = json.loads((results_dir / "leaderboard.json").read_text())
+    by_name = {r["config"]["name"]: r for r in rows}
+    y = np.loadtxt(
+        Path(data_dir) / "y_train.csv", delimiter=",", skiprows=1, usecols=1, dtype=int
+    )
+    _, tuning, _ = stratified_split(y, config["seed"])
+    tuning_y = y[tuning]
     fixed = {}
     for name, row in by_name.items():
-        scores = np.load(row["artifact_stem"] + ".npz")["tuning_scores"]
+        stem = artifact_dir / "candidates" / Path(row["artifact_stem"]).name
+        scores = np.load(str(stem) + ".npz", allow_pickle=False)["tuning_scores"]
         fixed[name] = metrics(
             tuning_y, scores, 0.2, row["config"]["family"] == "logistic"
         )
@@ -52,17 +60,18 @@ def main():
                 "scope": "tuning; same rows, optimizer budget, threshold and all unrelated settings",
             }
         )
-    with Path("results/ablation_results.csv").open("w", newline="") as handle:
+    output_dir.mkdir(parents=True)
+    with (output_dir / "ablation_results.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(ablations[0]))
         writer.writeheader()
         writer.writerows(ablations)
-    held = json.loads(Path("results/holdout.json").read_text())
+    held = json.loads((results_dir / "holdout.json").read_text())
     selected = held["selected"]
     counts = np.array([selected[k] for k in ["tp", "fp", "fn", "tn"]])
     rng = np.random.default_rng(433)
     draws = rng.multinomial(counts.sum(), counts / counts.sum(), size=2000)
     bootstrap_f1 = 2 * draws[:, 0] / (2 * draws[:, 0] + draws[:, 1] + draws[:, 2])
-    cv = json.loads(Path("results/cross_validation.json").read_text())
+    cv = json.loads((results_dir / "cross_validation.json").read_text())
     cv_f1 = np.array([fold["metrics"]["f1"] for fold in cv["folds"]])
     summary = {
         "holdout": held,
@@ -80,7 +89,23 @@ def main():
         - held["selected_at_0_5"]["accuracy"],
         "ablations": ablations,
     }
-    write_json("results/validation_summary.json", summary)
+    write_json(output_dir / "validation_summary.json", summary)
+    candidate = artifact_dir / "candidates" / Path(config["candidate_artifact"]).name
+    candidate_data = json.loads(Path(str(candidate) + ".json").read_text())
+    curve = {
+        "experiment_id": config["experiment_id"],
+        "rows": candidate_data["threshold_curve"],
+    }
+    write_json(output_dir / "selected_threshold_curve.json", curve)
+    return summary, curve
+
+
+def plot_figures(summary, curve, config, results_dir, figure_dir):
+    """Produce figures using tracked aggregate evidence, without row data."""
+    results_dir, figure_dir = Path(results_dir), Path(figure_dir)
+    figure_dir.mkdir(parents=True, exist_ok=True)
+    if curve["experiment_id"] != config["experiment_id"]:
+        raise ValueError("Threshold curve and selected configuration disagree")
     # Matplotlib is used only to produce figures, never for model fitting.
     os.environ.setdefault(
         "MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "cs433-matplotlib")
@@ -92,12 +117,9 @@ def main():
 
     plt.rcParams.update({"pdf.fonttype": 42, "ps.fonttype": 42})
 
-    selected_config = json.loads(Path("config/selected_model.json").read_text())
-    candidate = json.loads(
-        Path(selected_config["candidate_artifact"] + ".json").read_text()
-    )
-    curve = candidate["threshold_curve"]
-    fig, ax = plt.subplots(figsize=(4.6, 2.25), layout="constrained")
+    plt.rcParams.update({"font.size": 11})
+    curve = curve["rows"]
+    fig, ax = plt.subplots(figsize=(4.6, 2.35), layout="constrained")
     ax.plot(
         [r["threshold"] for r in curve],
         [r["f1"] for r in curve],
@@ -110,15 +132,15 @@ def main():
         label="Tuning accuracy",
         color="#b45929",
     )
-    ax.axvline(selected_config["threshold"], color="0.4", linestyle="--", linewidth=0.8)
+    ax.axvline(config["threshold"], color="0.4", linestyle="--", linewidth=0.8)
     ax.set(xlabel="Probability threshold", ylabel="Score", ylim=(0, 1))
     ax.legend(frameon=False, fontsize=9)
     ax.grid(alpha=0.2)
-    Path("report/figures").mkdir(parents=True, exist_ok=True)
-    fig.savefig("report/figures/threshold_tradeoff.pdf")
-    fig.savefig("report/figures/threshold_tradeoff.png", dpi=180)
+    fig.savefig(figure_dir / "threshold_tradeoff.pdf")
+    fig.savefig(figure_dir / "threshold_tradeoff.png", dpi=180)
     plt.close(fig)
-    missing = list(csv.DictReader(Path("results/feature_audit.csv").open()))
+    with (results_dir / "feature_audit.csv").open() as handle:
+        missing = list(csv.DictReader(handle))
     top = sorted(
         missing, key=lambda r: float(r["train_missing_fraction"]), reverse=True
     )[:12]
@@ -132,7 +154,7 @@ def main():
         xlabel="Missing training entries (%)",
         title="Raw missingness; no global survey-code replacement",
     )
-    fig.savefig("report/figures/missingness.png", dpi=160)
+    fig.savefig(figure_dir / "missingness.png", dpi=160)
     plt.close(fig)
     print(
         json.dumps(
@@ -148,6 +170,33 @@ def main():
             indent=2,
         )
     )
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--results-dir", default="results")
+    parser.add_argument("--config", default="config/selected_model.json")
+    parser.add_argument("--figure-dir", default="report/figures")
+    parser.add_argument("--recompute", action="store_true")
+    parser.add_argument("--data-dir", default="dataset")
+    parser.add_argument("--artifact-dir", default="artifacts")
+    parser.add_argument("--output-dir", help="Fresh directory required for --recompute")
+    args = parser.parse_args()
+    config = json.loads(Path(args.config).read_text())
+    if args.recompute:
+        if not args.output_dir:
+            parser.error("--recompute requires a fresh --output-dir")
+        summary, curve = recompute(
+            args.results_dir, args.data_dir, args.artifact_dir, args.output_dir, config
+        )
+    else:
+        summary = json.loads(
+            (Path(args.results_dir) / "validation_summary.json").read_text()
+        )
+        curve = json.loads(
+            (Path(args.results_dir) / "selected_threshold_curve.json").read_text()
+        )
+    plot_figures(summary, curve, config, args.results_dir, args.figure_dir)
 
 
 if __name__ == "__main__":

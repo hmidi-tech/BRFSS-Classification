@@ -1,0 +1,27 @@
+{
+  "pages": 3,
+  "sha256": "0b9a264ccfcc5dc105a19f2d657ce911e7573078477a2352b40394fc80990ee3",
+  "main_content_pages": 2,
+  "references_only_third_page": true,
+  "overfull_boxes": 0,
+  "underfull_boxes": 10,
+  "font_warnings": 0,
+  "undefined_references": false,
+  "fonts": [
+    "Type0",
+    "Type1"
+  ],
+  "compiler": "Tectonic 0.17.0 --only-cached",
+  "paper_points": [
+    0.0,
+    0.0,
+    612.0,
+    792.0
+  ],
+  "authors": [
+    "Mohamed Amine Hmidi",
+    "Mohamed Yebari",
+    "Omar Marouane Bensaid"
+  ],
+  "template_class_unchanged": true
+}
