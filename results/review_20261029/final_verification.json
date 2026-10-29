@@ -1,0 +1,93 @@
+{
+  "tested_source_commit": "a10e3729325ebc39329d8fcb5db7c1ba971b04d0",
+  "tests": {
+    "passed": 77,
+    "failed": 1,
+    "skipped": 0,
+    "failures": [
+      "test_github_link_format"
+    ],
+    "independent_passed": 50,
+    "official_public_passed": 27,
+    "official_scope": "Unmodified separate course clone, executed in ml26; public permalink check is unverified."
+  },
+  "protected_assets": {
+    "artifacts/final_model.npz": "443e021cf4543d8fcea015a23d3683c3425fa9083f1c2d11eec54ce3a7a2b393",
+    "artifacts/final_model.json": "8f5916747e15ac6b2e12f8dabddd10af54602a9ba2b4013e5f4433ee26fdde11",
+    "config/selected_model.json": "9696cff7f736ae3b3ce03381715b5349c1a19859ed0a855890409ac1fcd6a1c0",
+    "submission.csv": "e8ef72c62f514931ed2d66f28fcb29201756c66d6d90f4c6fa9a73b4df0b0665"
+  },
+  "historical_result_files_unchanged": true,
+  "independent_final_code_refit_exact_weights": true,
+  "independent_final_code_refit_csv_sha256": "e8ef72c62f514931ed2d66f28fcb29201756c66d6d90f4c6fa9a73b4df0b0665",
+  "runtime_import_audit": "stdlib and NumPy only",
+  "hardcoded_user_paths_in_runtime": [],
+  "prohibited_tracked_files": [],
+  "credential_pattern_candidates": [],
+  "runtime_sources": {
+    "implementations.py": "7eb1964eaa024843e0edbedafd59927090bfe23699818ed07a8cdfd2a578ff36",
+    "data_io.py": "0c01d0fb1c65c0fe62140dd9462adb4127ca272a7a1ca0573394ac502e9d4b2c",
+    "preprocessing.py": "770cd7801d425f320d1692027f266787e0047aedef60c76ac34e31448b355057",
+    "models.py": "4bf713bf104f3f371c30af2940ee97dfc1fc85e0fb5f084cb153c9e6ba746f70",
+    "evaluation.py": "489e892874d8493a6a91f1fbb97eb839edd83f716fb1f637f7b5a08ea44e4e67",
+    "train_final.py": "365156de06d305b8351fff5a3b4e47a1560cb8890c47dc9c75868128a06af747",
+    "run.py": "633365d22c36a5ec88c60b280a8174cdb228a5e3094050e900745912ec2b7c09",
+    "experiments.py": "087d4d114b8283e0d9cd69bcc6bedd7600b3b7f5f68970e49795c5cd78b17128",
+    "helpers.py": "8b82f69b8ab1d47cf9f65f14f008c50ddc20212e9d7e1207ecf92114cfb2703f"
+  },
+  "report": {
+    "pages": 3,
+    "sha256": "263e47c0cf5d34a3722c31b9956ca51a1e85019ce41f372294fce2bf8d5bd69d",
+    "main_content_pages": 2,
+    "references_only_third_page": true,
+    "overfull_boxes": 0,
+    "underfull_boxes": 10,
+    "font_warnings": 0,
+    "undefined_references": false,
+    "fonts": [
+      "Type0",
+      "Type1"
+    ],
+    "compiler": "Tectonic 0.17.0 --only-cached",
+    "paper_points": [
+      0.0,
+      0.0,
+      612.0,
+      792.0
+    ],
+    "authors": [
+      "Mohamed Amine Hmidi",
+      "Mohamed Yebari",
+      "Omar Marouane Bensaid"
+    ],
+    "template_class_unchanged": true
+  },
+  "remaining": [
+    "CS-433 staff AI policy and disclosure confirmation",
+    "Final approval by all three students",
+    "Students publish the reviewed commits and run the public permalink check",
+    "Optional approved AIcrowd submission and actual acceptance/score verification",
+    "EPFL final submission"
+  ],
+  "limitations": [
+    "Opened holdout not reused for new selection",
+    "Non-nested model-family choice and conditional development diagnostics",
+    "Legacy mixed-precision, iteration-budget termination",
+    "Unweighted survey evaluation, incomplete semantic mapping and unverified clinical validity",
+    "Legacy grader environment and cross-environment bitwise identity not tested"
+  ],
+  "resumed_checks": {
+    "observed_head": "a10e3729325ebc39329d8fcb5db7c1ba971b04d0",
+    "combined_tests": {
+      "passed": 77,
+      "failed": 1,
+      "skipped": 0,
+      "failure": "test_github_link_format"
+    },
+    "compileall_exit_code": 0,
+    "fresh_output_csv_sha256": "e8ef72c62f514931ed2d66f28fcb29201756c66d6d90f4c6fa9a73b4df0b0665",
+    "pdf_is_newer_than_sources": true,
+    "report_sha256": "263e47c0cf5d34a3722c31b9956ca51a1e85019ce41f372294fce2bf8d5bd69d",
+    "scope": "Independent final checks after reading the resume instructions; no model development restarted."
+  }
+}

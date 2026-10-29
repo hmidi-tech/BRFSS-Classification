@@ -9,7 +9,6 @@ __pycache__/
 .venv/
 artifacts/cache/
 artifacts/tmp/
-team_repository/
 report/*.aux
 report/*.log
 report/*.out
@@ -30,3 +29,11 @@ report/*.fdb_latexmk
 
 # Competition predictions kept locally
 /submission.csv
+
+# Root CSVs are local inputs/predictions, not source files.
+/*.csv
+.env
+.env.*
+!.env.example
+*.pem
+*.key

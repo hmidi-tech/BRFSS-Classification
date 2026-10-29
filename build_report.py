@@ -173,6 +173,7 @@ def generate(
     ):
         number(name, value)
     number("FinalGradient", final["fit"]["gradient_inf_norm"], 7)
+    number("MajorityAccuracy", summary["holdout"]["majority_baseline"]["accuracy"])
     number("SelectedLambda", selection["model"]["lambda"], 4)
     diagnostics = _read(root / "review_20261029/diagnostics.json")
     if (

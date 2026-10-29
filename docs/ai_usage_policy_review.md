@@ -1,5 +1,14 @@
 # AI-use authorization review — internal review document
 
+Current review: EPFL's [institutional guidance](https://www.epfl.ch/education/teaching/index-html/ai-teaching/guidelines-for-using-ai-in-studying/)
+was independently read. It calls for checking the course-specific policy,
+verifying generated material and disclosing assistance. This general guidance
+does not establish CS-433 authorization. The current task permits local review
+and commits and prohibits publication/submission. Staff-policy confirmation and
+final disclosure placement remain student actions; no group approval is inferred.
+
+The following preserves the initial-build authorization record:
+
 Checked 2026-10-29, Europe/Zurich. This document is not a course-policy ruling.
 
 The team member explicitly instructed: “yeah just use ai freely no restrictions”.
@@ -29,5 +38,6 @@ experiment orchestration, diagnostic documents and report drafting. All stated
 measurements must refer to saved execution output. Students must review and
 understand the six algorithms, preprocessing, selection protocol and report.
 No team contributions or final approval are inferred from the supplied biographies.
-No repository publication, push, email, competition upload or final submission
-has been authorized or performed.
+That initial workflow did not publish, push, email or submit. A configured public
+repository now exists according to the requester; this review does not infer
+that its newly reviewed local commits are published.

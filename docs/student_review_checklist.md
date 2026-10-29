@@ -26,8 +26,9 @@ The suggested team strengths do not establish an agreed allocation of work.
   equations, actual measured numbers and uncertainty limitations.
 - [ ] Verify the saved model, complete preprocessing state, command, two-run
   CSV hash and separate retraining check; no cross-backend identity is claimed.
-- [ ] Create/approve the public repository and final exact commit permalink;
-  rerun the unmodified public grader using that real permalink.
+- [ ] Review the new local commits. Students handle publication to the configured
+  repository and supply the exact final commit permalink; then rerun the
+  unmodified public grader against that real published revision.
 - [ ] Review the precise CSV hash and team-wide daily submission budget, then
   explicitly approve any competition upload. No upload has occurred here.
 - [ ] After an accepted upload, record the platform response/score and verify

@@ -1,6 +1,9 @@
-# Execution record
+# Historical initial-build execution record
 
-Commands were run from the project root unless a working directory is stated.
+This record describes the original build before repository cleanup and the final
+quality review. It does not describe the current tracked file inventory or HEAD.
+Current status is in `docs/final_audit.md` and `results/review_20261029/`.
+Commands were run from the original project root unless a working directory is stated.
 Full outputs and machine-readable measurements are in `results/`.
 
 | Phase | Actual command / action | Outcome |

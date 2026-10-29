@@ -1,0 +1,6 @@
+# Development/visualization only; never imported by prediction or training.
+-r requirements.txt
+pytest==9.1.1
+GitPython==3.1.18
+black==26.5.1
+matplotlib==3.11.1

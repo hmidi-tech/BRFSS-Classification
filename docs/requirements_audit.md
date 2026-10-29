@@ -1,8 +1,10 @@
 # Fall 2026 requirements audit
 
-Internal checklist; primary specification: supplied `project1_description.pdf`.
-Original starter files and `/home/amine/Projects_WSL/ML_course_official` are preserved.
-The workspace's protected `.git` directory is not a functioning repository.
+Primary specification: the supplied Fall 2026 project PDF, available locally
+outside the tracked student files. Original starter files and the separate
+official clone are preserved. The initial parent-workspace discovery happened
+before the student Git repository existed. The current student repository is a
+valid repository on `main`; that earlier observation is historical.
 
 | Requirement | Evidence / verification |
 |---|---|
@@ -42,13 +44,14 @@ Unresolved contradictions:
 4. The archive uses `sample_submission.csv`, whereas PDF prose says
    `sample-submission.csv`. Inspecting the actual header/IDs establishes format.
 
-Materials found: the project PDF, supplied helpers, public grader, official LaTeX
+Initial discovery materials: the project PDF, supplied helpers, public grader, official LaTeX
 template, four actual dataset CSVs, dataset ZIP, and parent `../project1ML.zip`.
 The latter contains starter files only, with data under `data/dataset/`.
 The current extracted dataset is instead `dataset/`.
-No local student implementation, notebook, report draft, model or experiment
-history existed at discovery. The four educational guides and environment PDF
+No student implementation existed at that initial discovery, before the first
+build. The four educational guides and environment PDF
 named in the request were not found in the project or relevant course clone.
+These course/data resources are local-only and excluded from current Git tracking.
 
 Known grader limitations: the SGD oracle has only one sample and does not test
 multi-sample randomness; mandatory-function gradients and mutation behavior

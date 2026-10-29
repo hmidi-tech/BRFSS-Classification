@@ -1,0 +1,2 @@
+# Tested runtime; Python standard-library modules need no installation.
+numpy==2.5.3

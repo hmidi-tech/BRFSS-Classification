@@ -2,9 +2,11 @@
 
 Seed 433; labeled rows split deterministically and by class into 196,881
 development, 65,627 tuning and 65,627 final holdout observations. Stored indices:
-`artifacts/split_indices.npz`. Each class is permuted independently before the
-60/20/20 partition. The holdout is never passed to model/preprocessing fitting
-or threshold selection.
+`artifacts/split_indices.npz` locally (not tracked). They are regenerated from
+the recorded seed by `stratified_split`. Each class is permuted independently
+before the 60/20/20 partition. During model selection the holdout is not passed
+to model/preprocessing fitting or threshold selection. The later all-label
+refit legitimately uses all labels after freezing and evaluating the choice.
 
 Before fitting, `experiments.py` writes `results/protocol.json` and ten planned
 configurations. This is a bounded comparison, not an exhaustive search. The
@@ -69,6 +71,15 @@ and all fitted feature specifications support inference-only reproduction.
 
 The code logs started/successful/failed/interrupted states, data hashes, source
 hashes, timestamps, parameters, runtime, fit termination, metrics and peak RSS.
-There is no valid local Git commit; commit fields are explicitly null. The final
-CSV has not been uploaded. Its match to a best actual competition entry cannot
-yet be verified.
+Historical experiment-time Git fields are null because those experiments
+preceded repository initialization. The student repository now has real local
+commits; review evidence records source hashes and the observed source commit.
+The final CSV has not been uploaded by this workflow. Its match to a best actual
+competition entry cannot yet be verified.
+
+The final quality review performs bounded precision diagnostics and three paired
+categorical-encoding checks on development data. These happen after the holdout
+has been opened; they are not a fresh independent final evaluation. The frozen
+configuration, weights, metadata and original CSV remain unchanged. New direct
+optimizer calls use float64 evaluation; the frozen configuration dispatches
+explicit legacy float32 arithmetic for exact historical refitting.
