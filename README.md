@@ -221,13 +221,6 @@ budget-limited optimization and unverified external clinical generalization.
 The calibrated-probability F1 threshold theorem is not assumed to apply to this
 classifier. The scientific references are listed below.
 
-## Development assistance and responsibility
-
-AI-assisted tools supported implementation, debugging, experimental
-verification and documentation. The students remain responsible for
-understanding the methods, reviewing the submitted work and ensuring
-the accuracy of the reported results.
-
 ## References
 
 - CDC: [2015 BRFSS codebook](https://www.cdc.gov/brfss/annual_data/2015/pdf/codebook15_llcp.pdf)
