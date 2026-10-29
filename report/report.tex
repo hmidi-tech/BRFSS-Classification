@@ -23,6 +23,8 @@ these results as prospective clinical validation.
 \end{abstract}
 
 \section{Data and experimental design}
+We study how imputation, categorical representation, regularization and
+threshold choice affect minority-class classification in an imbalanced survey.
 The target \texttt{\_MICHD} concerns reported history of myocardial infarction
 or coronary heart disease, rather than verified future disease onset.
 The supplied data contain \NTrain{} labeled rows and \NTest{} test rows with
@@ -43,8 +45,8 @@ Seed \Seed{} defines a stratified split of \NDevelopment{} development,
 \NTuning{} tuning and \NHoldout{} holdout rows. Imputation, scaling, categories,
 references and indicator inclusion use only the fitting partition, respecting
 the training-fold boundary~\cite{leakage}.
-The original holdout was opened after selection. This review checks its
-frozen scores; no new model or threshold is selected using holdout labels.
+The holdout was opened only after freezing the model and threshold.
+Subsequent precision and representation diagnostics use development data only.
 
 F1 is our retained minority-class development objective.
 Written AIcrowd rules specify accuracy~\cite{rules}; an observed leaderboard
@@ -86,8 +88,8 @@ $y_i\in\{0,1\}$ and intercept $w_0$, we minimize
 \end{equation}
 Its intercept convention is separate from the mandatory methods.
 NumPy L-BFGS uses ten curvature pairs and Armijo backtracking.
-The historical fit stores float32 designs and rounds optimization matvecs
-to float32, with float64 weights and reductions.
+The historical fit stores float32 designs and rounds optimization matrix--vector
+products to float32, with float64 weights and reductions.
 That arithmetic is preserved for reproduction; a separate blocked float64
 path passes finite-difference checks.
 The frozen budget is \MaxIterations{} updates and the requested gradient
@@ -95,8 +97,9 @@ infinity norm is $10^{-5}$. The all-label final norm is \FinalGradient{},
 so convergence is not established.
 
 \textbf{Selection.}
-Ten configurations compare processing and categorical-design penalties
-$\lambda\in\{0,10^{-4},10^{-3},10^{-2},10^{-1}\}$.
+Ten configurations compare preprocessing and model families.
+The categorical design uses $\lambda=0$, $10^{-4}$, $10^{-3}$,
+$10^{-2}$ or $10^{-1}$.
 Thresholds span 0.05--0.65 in steps of 0.01 on tuning predictions only;
 equal metric values prefer higher thresholds.
 Within 0.002 of maximum tuning F1, the recorded rule prefers fewer columns,
@@ -158,9 +161,9 @@ At threshold 0.50, the same scores give F1 \HalfFone{}, accuracy \HalfAccuracy{}
 and recall \HalfRecall{}.
 The tuning-selected threshold adds \ThresholdFoneGain{} holdout F1 while
 losing \ThresholdAccuracyLoss{} accuracy.
-An accuracy-selected tuning threshold of \AccuracyTunedThreshold{} instead
-gives accuracy \AccuracyTunedScore{} and F1 \AccuracyTunedFone{}.
-No alternative replaces the verified CSV.
+On the tuning set, selecting the threshold for accuracy gives
+\AccuracyTunedScore{} accuracy and \AccuracyTunedFone{} F1 at
+\AccuracyTunedThreshold{}. The retained threshold remains \SelectedThreshold{}.
 
 \begin{figure}[t]
 \centering
@@ -192,16 +195,15 @@ gradient norm without a consistent F1 gain; the frozen model is retained.
 Clinical validity, population fairness and causal interpretation are unestablished.
 
 After selection, all-label fitting discovers additional categories, giving
-\FinalDimension{} final columns. Complete fitted state accompanies the weights.
+\FinalDimension{} final columns.
 From the repository root, use \texttt{python run.py} with
-\texttt{--data-dir ../dataset}, \texttt{--output new.csv} and \texttt{--seed 433}.
+\texttt{-{}-data-dir ../dataset}, \texttt{-{}-output new.csv} and \texttt{-{}-seed 433}.
 Test inputs and saved state suffice. The original CSV is reproduced exactly
 in Python 3.12.14 / NumPy 2.5.3 with four OpenBLAS threads, including a separate
 legacy refit; cross-environment bitwise identity is unverified.
-Students must supply the final public commit permalink after review.
-AI-assisted code and writing require student verification and course-specific
-disclosure; staff authorization remains unverified. No competition acceptance
-or external score is claimed.
+The frozen model and threshold are specified in
+\texttt{config/selected\_model.json}; complete preprocessing state is stored
+with the fitted weights.
 
 \clearpage
 \begin{thebibliography}{6}
