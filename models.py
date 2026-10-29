@@ -6,6 +6,9 @@ import numpy as np
 
 
 def sigmoid(z):
+    z = np.asarray(z)
+    if not np.issubdtype(z.dtype, np.floating):
+        z = z.astype(np.float64)
     result = np.empty_like(z)
     positive = z >= 0
     result[positive] = 1 / (1 + np.exp(-z[positive]))

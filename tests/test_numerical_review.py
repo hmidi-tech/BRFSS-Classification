@@ -5,7 +5,7 @@ import pytest
 
 import implementations as impl
 from evaluation import choose_threshold, metrics
-from models import fit_logistic, logistic_value_gradient
+from models import fit_logistic, logistic_value_gradient, sigmoid
 
 
 def test_ridge_extreme_finite_penalty_remains_finite():
@@ -13,6 +13,11 @@ def test_ridge_extreme_finite_penalty_remains_finite():
         w, loss = impl.ridge_regression(np.array([0.0, 1.0]), np.eye(2), 1e308)
     assert np.isfinite(w).all() and np.isfinite(loss)
     np.testing.assert_allclose(w, [0.0, 2.5e-309], atol=0, rtol=1e-12)
+
+
+def test_optional_sigmoid_integer_logits_preserve_probabilities():
+    np.testing.assert_array_equal(sigmoid(np.array([-1000, 0, 1000])), [0.0, 0.5, 1.0])
+    assert sigmoid(np.array([0.0], dtype=np.float32)).dtype == np.float32
 
 
 @pytest.mark.parametrize(
